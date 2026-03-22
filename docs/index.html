@@ -254,6 +254,7 @@ async function init() {
   network.on('stabilizationIterationsDone', () => {
     loadingFill.style.width = '100%';
     loadingText.textContent = '完了';
+    network.setOptions({ physics: { enabled: false } });
     setTimeout(() => { document.getElementById('loading').style.display = 'none'; }, 300);
   });
 
@@ -301,8 +302,9 @@ function showDetail(nodeId) {
   if (info.papers && info.papers.length > 0) {
     html += `<div class="section-title">主な論文 (${info.n_papers}件中)</div>`;
     for (const p of info.papers) {
+      const roleTag = p.role ? `<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:10px;margin-left:4px;background:${p.role.includes('第一') ? '#4363d833' : p.role.includes('ラスト') ? '#e6194b33' : '#33333366'};color:${p.role.includes('第一') ? '#7ab8f5' : p.role.includes('ラスト') ? '#f08080' : '#aaa'};border:1px solid ${p.role.includes('第一') ? '#4363d855' : p.role.includes('ラスト') ? '#e6194b55' : '#44444466'}">${esc(p.role)}</span>` : '';
       html += `<div class="paper-item">
-        <div class="paper-title">${esc(p.title)}</div>
+        <div class="paper-title">${esc(p.title)}${roleTag}</div>
         <div class="paper-meta">${esc(p.journal || '')} ${esc(p.date || '')}</div>
       </div>`;
     }
@@ -311,8 +313,10 @@ function showDetail(nodeId) {
   if (info.grants && info.grants.length > 0) {
     html += `<div class="section-title">主な助成金 (${info.n_grants}件中)</div>`;
     for (const g of info.grants) {
+      const roleColor = g.role === '研究代表者' ? '#f5a623' : '#888';
+      const roleTag = g.role ? `<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:10px;background:${roleColor}22;color:${roleColor};border:1px solid ${roleColor}44;margin-left:4px;">${esc(g.role)}</span>` : '';
       html += `<div class="grant-item">
-        <div class="paper-title">${esc(g.title)}</div>
+        <div class="paper-title">${esc(g.title)}${roleTag}</div>
         <div class="grant-cat">${esc(g.category || '')}</div>
         <div class="grant-period">${esc(g.from || '')} ~ ${esc(g.to || '')}</div>
       </div>`;
