@@ -218,7 +218,7 @@ def _inject_header(html_path, topic_labels):
         <h1 style="color:white;margin:0;font-size:20px;font-family:sans-serif;">
             大阪大学 研究者エコロジカルマップ
             <span style="font-size:12px;color:#888;margin-left:10px;">
-                Osaka University Researcher Ecological Map
+                University of Osaka Researcher Ecological Map
             </span>
         </h1>
         <p style="color:#aaa;margin:2px 0 0;font-size:12px;">
