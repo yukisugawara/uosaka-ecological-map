@@ -51,8 +51,15 @@
   .grant-period { color: #777; font-size: 11px; }
   .stat-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-right: 6px; background: #222; border: 1px solid #444; }
 
+  /* Mode switch */
+  #mode-switch { display: flex; gap: 0; margin-left: auto; }
+  #mode-switch button { padding: 5px 14px; font-size: 12px; border: 1px solid #444; background: #1a1a1a; color: #888; cursor: pointer; }
+  #mode-switch button:first-child { border-radius: 5px 0 0 5px; }
+  #mode-switch button:last-child { border-radius: 0 5px 5px 0; }
+  #mode-switch button.active { background: #4363d8; color: #fff; border-color: #4363d8; }
+
   /* Legend toggle */
-  #legend-toggle { cursor: pointer; color: #888; font-size: 12px; text-decoration: underline; margin-left: auto; white-space: nowrap; }
+  #legend-toggle { cursor: pointer; color: #888; font-size: 12px; text-decoration: underline; white-space: nowrap; margin-left: 10px; }
   #legend { position: fixed; top: 50px; left: 0; width: 250px; bottom: 0; background: rgba(10,10,10,0.92); border-right: 1px solid #333; overflow-y: auto; padding: 12px; display: none; z-index: 90; }
   #legend.visible { display: block; }
   #legend h3 { font-size: 13px; margin-bottom: 8px; }
@@ -88,12 +95,54 @@
     <input type="text" id="search-input" placeholder="研究者を検索（名前・所属・分野）..." autocomplete="off">
     <div id="search-results"></div>
   </div>
-  <span id="legend-toggle" onclick="toggleLegend()">Topics ▼</span>
+  <div id="mode-switch">
+    <button class="active" onclick="switchMode('topic')">トピック</button>
+    <button onclick="switchMode('dept')">部局</button>
+  </div>
+  <span id="legend-toggle" onclick="toggleLegend()">凡例 ▼</span>
+  <span id="about-btn" onclick="toggleAbout()" title="このマップについて" style="cursor:pointer;font-size:18px;margin-left:10px;">&#x1F4D6;</span>
+</div>
+
+<!-- About Modal -->
+<div id="about-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:300;background:rgba(0,0,0,0.7);justify-content:center;align-items:center;">
+  <div style="background:#1a1a1a;border:1px solid #444;border-radius:12px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;padding:24px;position:relative;">
+    <button onclick="toggleAbout()" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#888;font-size:20px;cursor:pointer;">&times;</button>
+    <h2 style="font-size:18px;margin-bottom:12px;">UOsaka Research Landscape について</h2>
+    <div style="font-size:13px;line-height:1.8;color:#ccc;">
+      <p>大阪大学（University of Osaka）に所属する研究者のネットワークをインタラクティブに可視化したマップです。</p>
+      <h3 style="font-size:14px;color:#eee;margin:14px 0 6px;">データソース</h3>
+      <ul style="padding-left:20px;">
+        <li><b>大阪大学研究者総覧</b>（rd.iai.osaka-u.ac.jp）— 研究者リスト・所属・研究分野</li>
+        <li><b>researchmap</b>（researchmap.jp）— 論文・著書・研究発表・助成金の詳細情報</li>
+      </ul>
+      <h3 style="font-size:14px;color:#eee;margin:14px 0 6px;">ネットワークの構築方法</h3>
+      <p><b>ノード</b>：各研究者を1つのノードとして表示しています。ノードの大きさはつながりの数（次数）に比例します。</p>
+      <p><b>エッジ（つながり）</b>は以下の2種類の基準で構築されています：</p>
+      <ul style="padding-left:20px;">
+        <li><b>共著・共同研究関係</b> — 論文の共著者や科研費の共同研究者として名前が共に出現する回数をカウントし、重みとしています。</li>
+        <li><b>トピック類似度</b> — 各研究者の論文タイトル・研究発表・助成金タイトルをコーパスとし、TF-IDFベクトルのコサイン類似度を計算。閾値（0.15）を超えるペアにエッジを追加しています。</li>
+      </ul>
+      <h3 style="font-size:14px;color:#eee;margin:14px 0 6px;">色分けモード</h3>
+      <ul style="padding-left:20px;">
+        <li><b>トピックモード</b> — BERTopic（多言語対応の埋め込みモデル＋クラスタリング）により、研究内容を30のトピックに自動分類し、トピック別に色分けしています。</li>
+        <li><b>部局モード</b> — 研究者の所属部局（研究科・研究所等）ごとに色分けしています。</li>
+      </ul>
+      <h3 style="font-size:14px;color:#eee;margin:14px 0 6px;">つながり強度（%）</h3>
+      <p>詳細パネルに表示される「つながり%」は、選択した研究者との関係の強さを示します。共著件数×5 ＋ トピック類似度を合算したスコアを、最も強いつながりを100%として正規化しています。</p>
+      <h3 style="font-size:14px;color:#eee;margin:14px 0 6px;">操作方法</h3>
+      <ul style="padding-left:20px;">
+        <li>検索バーで研究者を名前・所属・分野で検索</li>
+        <li>ノードをクリックで選択 → 右パネルに詳細表示</li>
+        <li>マウスホイールでズーム、ドラッグで移動</li>
+        <li>「トピック / 部局」ボタンで色分けモード切替</li>
+      </ul>
+    </div>
+  </div>
 </div>
 
 <!-- Legend -->
 <div id="legend">
-  <h3>Research Topics</h3>
+  <h3 id="legend-title">Research Topics</h3>
   <div id="legend-items"></div>
 </div>
 
@@ -119,6 +168,7 @@ const COLORS = [
 ];
 
 let network, nodesDataset, edgesDataset, researcherData = {}, nodeIndex = [];
+let netData, currentMode = 'topic', orgColors = {};
 
 async function init() {
   const loadingFill = document.getElementById('loading-fill');
@@ -128,7 +178,8 @@ async function init() {
   loadingText.textContent = 'ネットワークデータを読み込み中...';
   loadingFill.style.width = '20%';
   const netResp = await fetch('network.json');
-  const netData = await netResp.json();
+  netData = await netResp.json();
+  orgColors = netData.org_colors || {};
 
   loadingText.textContent = '研究者データを読み込み中...';
   loadingFill.style.width = '50%';
@@ -161,6 +212,8 @@ async function init() {
     font: { color: '#fff', size: 10, strokeWidth: 2, strokeColor: '#000' },
     borderWidth: 1.5,
     group: n.group,
+    origTopicColor: n.color,
+    org_lv1: n.org_lv1 || '',
   })));
 
   edgesDataset = new vis.DataSet(netData.edges.map((e, i) => ({
@@ -168,6 +221,8 @@ async function init() {
     from: e.from,
     to: e.to,
     width: e.width,
+    origWeight: e.origWeight || 0,
+    origTopicSim: e.origTopicSim || 0,
     color: { color: '#333', highlight: '#888', opacity: 0.4 },
     smooth: { type: 'continuous' },
   })));
@@ -210,7 +265,7 @@ async function init() {
   });
 
   // Build legend
-  buildLegend(netData.nodes);
+  buildLegend();
 
   // Search setup
   setupSearch();
@@ -261,6 +316,53 @@ function showDetail(nodeId) {
         <div class="grant-cat">${esc(g.category || '')}</div>
         <div class="grant-period">${esc(g.from || '')} ~ ${esc(g.to || '')}</div>
       </div>`;
+    }
+  }
+
+  // Connected researchers
+  const neighbors = network.getConnectedNodes(nodeId);
+  if (neighbors.length > 0) {
+    // Get edge data for weights
+    const connections = [];
+    for (const nid of neighbors) {
+      const nInfo = researcherData[nid];
+      if (!nInfo) continue;
+      // Find edge between nodeId and nid
+      const edgeIds = network.getConnectedEdges(nodeId);
+      let weight = 0, topicSim = 0;
+      for (const eid of edgeIds) {
+        const ed = edgesDataset.get(eid);
+        if (ed && ((ed.from === nodeId && ed.to === nid) || (ed.from === nid && ed.to === nodeId))) {
+          weight = ed.origWeight || 0;
+          topicSim = ed.origTopicSim || 0;
+          break;
+        }
+      }
+      const score = weight * 5 + topicSim;
+      connections.push({ id: nid, name: nInfo.name, org: nInfo.org_lv1, weight, topicSim, score });
+    }
+    connections.sort((a, b) => b.score - a.score);
+
+    // Normalize scores for percentage display
+    const maxScore = connections.length > 0 ? connections[0].score : 1;
+
+    html += `<div class="section-title">つながり (${connections.length}名)</div>`;
+    for (const c of connections.slice(0, 15)) {
+      const pct = maxScore > 0 ? Math.round(c.score / maxScore * 100) : 0;
+      const barColor = currentMode === 'dept' ? (orgColors[c.org] || '#888') : '#4363d8';
+      html += `<div class="paper-item" style="cursor:pointer" onclick="showDetail('${c.id}')">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="paper-title" style="font-size:12px">${esc(c.name)}</span>
+          <span style="color:#888;font-size:11px;flex-shrink:0;margin-left:8px">${pct}%</span>
+        </div>
+        <div style="background:#222;height:3px;border-radius:2px;margin-top:3px">
+          <div style="background:${barColor};height:100%;width:${pct}%;border-radius:2px"></div>
+        </div>
+        <div style="color:#666;font-size:10px;margin-top:1px">${esc(c.org)}${c.weight > 0 ? ' / 共著' + c.weight + '件' : ''}${c.topicSim > 0 ? ' / 類似度' + (c.topicSim * 100).toFixed(0) + '%' : ''}</div>
+      </div>`;
+    }
+    if (connections.length > 15) {
+      html += `<div style="color:#666;font-size:11px;text-align:center">...他 ${connections.length - 15}名</div>`;
     }
   }
 
@@ -322,28 +424,81 @@ function setupSearch() {
   });
 }
 
-function buildLegend(nodes) {
-  // Count topics
-  const topicCounts = {};
-  for (const n of nodes) {
-    const g = n.group;
-    if (g === undefined || g < 0) continue;
-    topicCounts[g] = (topicCounts[g] || 0) + 1;
-  }
-
+function buildLegend() {
   const container = document.getElementById('legend-items');
-  const sorted = Object.entries(topicCounts).sort((a, b) => b[1] - a[1]);
-  for (const [tid, count] of sorted) {
-    const color = COLORS[parseInt(tid) % COLORS.length];
-    const div = document.createElement('div');
-    div.className = 'legend-item';
-    div.innerHTML = `<span class="legend-dot" style="background:${color}"></span>Topic ${tid} (${count})`;
-    container.appendChild(div);
+  const title = document.getElementById('legend-title');
+  container.innerHTML = '';
+
+  if (currentMode === 'topic') {
+    title.textContent = 'Research Topics';
+    const topicCounts = {};
+    for (const n of netData.nodes) {
+      const g = n.group;
+      if (g === undefined || g < 0) continue;
+      topicCounts[g] = (topicCounts[g] || 0) + 1;
+    }
+    const sorted = Object.entries(topicCounts).sort((a, b) => b[1] - a[1]);
+    for (const [tid, count] of sorted) {
+      const color = COLORS[parseInt(tid) % COLORS.length];
+      const div = document.createElement('div');
+      div.className = 'legend-item';
+      div.innerHTML = `<span class="legend-dot" style="background:${color}"></span>Topic ${tid} (${count})`;
+      container.appendChild(div);
+    }
+  } else {
+    title.textContent = '部局 Departments';
+    const orgCounts = {};
+    for (const n of netData.nodes) {
+      const org = n.org_lv1 || '';
+      if (!org) continue;
+      orgCounts[org] = (orgCounts[org] || 0) + 1;
+    }
+    const sorted = Object.entries(orgCounts).sort((a, b) => b[1] - a[1]);
+    for (const [org, count] of sorted) {
+      const color = orgColors[org] || '#555';
+      const div = document.createElement('div');
+      div.className = 'legend-item';
+      div.style.cursor = 'pointer';
+      div.innerHTML = `<span class="legend-dot" style="background:${color}"></span>${esc(org)} (${count})`;
+      container.appendChild(div);
+    }
   }
+}
+
+function switchMode(mode) {
+  currentMode = mode;
+  // Update button states
+  document.querySelectorAll('#mode-switch button').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.includes(mode === 'topic' ? 'トピック' : '部局'));
+  });
+
+  // Update node colors
+  const updates = [];
+  for (const n of netData.nodes) {
+    let color;
+    if (mode === 'topic') {
+      color = n.color;
+    } else {
+      color = orgColors[n.org_lv1] || '#555';
+    }
+    updates.push({
+      id: n.id,
+      color: { background: color, border: color, highlight: { background: '#fff', border: color } },
+    });
+  }
+  nodesDataset.update(updates);
+
+  // Update legend
+  buildLegend();
 }
 
 function toggleLegend() {
   document.getElementById('legend').classList.toggle('visible');
+}
+
+function toggleAbout() {
+  const modal = document.getElementById('about-modal');
+  modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
 }
 
 function esc(s) {
