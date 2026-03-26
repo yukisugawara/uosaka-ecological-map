@@ -3,161 +3,304 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>UOsaka Research Landscape</title>
+<title>U-Osaka Ecological Map</title>
+<meta name="description" content="大阪大学の研究者ネットワークをインタラクティブに可視化。共著・研究トピックでつながる研究者マップ。">
+<meta property="og:title" content="U-Osaka Ecological Map — 大阪大学 研究者マップ">
+<meta property="og:description" content="大阪大学に所属する研究者の共著・研究トピックネットワークをインタラクティブに探索できるマップです。">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://yukisugawara.github.io/uosaka-ecological-map/ogp.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="U-Osaka Ecological Map">
+<meta name="twitter:description" content="大阪大学の研究者ネットワーク可視化マップ">
+<meta name="twitter:image" content="https://yukisugawara.github.io/uosaka-ecological-map/ogp.svg">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4363d8">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" />
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Sans', sans-serif; background: #0a0a0a; color: #eee; overflow: hidden; height: 100vh; }
+/* ===== CSS Variables (theme) ===== */
+:root {
+  --bg: #0a0a0a; --bg2: #111; --bg3: #1a1a1a; --bg4: #222;
+  --border: #333; --border2: #444;
+  --text: #eee; --text2: #ccc; --text3: #aaa; --text4: #888; --text5: #666;
+  --accent: #4363d8; --accent2: #4ea1f3;
+  --red: #e6194b; --orange: #f5a623; --field: #7ab8f5;
+}
+[data-theme="light"] {
+  --bg: #f5f5f5; --bg2: #fff; --bg3: #f0f0f0; --bg4: #e8e8e8;
+  --border: #ddd; --border2: #ccc;
+  --text: #222; --text2: #333; --text3: #555; --text4: #777; --text5: #999;
+  --accent: #2b4acb; --accent2: #1a6fc4;
+  --red: #c0152e; --orange: #d48a1a; --field: #2b6db5;
+}
 
-  /* Header */
-  #header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(10,10,10,0.95); border-bottom: 1px solid #333; padding: 10px 20px; display: flex; align-items: center; gap: 20px; }
-  #header h1 { font-size: 18px; font-weight: 600; white-space: nowrap; }
-  #header h1 small { font-size: 11px; color: #888; font-weight: 400; margin-left: 8px; }
+/* ===== Reset & Base ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Helvetica Neue', Arial, 'Hiragino Sans', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; }
 
-  /* Search */
-  #search-box { position: relative; flex: 0 0 320px; }
-  #search-input { width: 100%; padding: 7px 12px; border-radius: 6px; border: 1px solid #444; background: #1a1a1a; color: #eee; font-size: 14px; outline: none; }
-  #search-input:focus { border-color: #4363d8; }
-  #search-input::placeholder { color: #666; }
-  #search-results { position: absolute; top: 100%; left: 0; right: 0; background: #1a1a1a; border: 1px solid #444; border-top: none; border-radius: 0 0 6px 6px; max-height: 400px; overflow-y: auto; display: none; z-index: 200; }
-  .search-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #222; font-size: 13px; }
-  .search-item:hover { background: #2a2a3a; }
-  .search-item .org { color: #888; font-size: 11px; }
-  .search-item .name-en { color: #aaa; font-size: 11px; margin-left: 6px; }
+/* ===== Header ===== */
+#header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: color-mix(in srgb, var(--bg) 95%, transparent); border-bottom: 1px solid var(--border); padding: 8px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+#header h1 { font-size: 17px; font-weight: 600; white-space: nowrap; }
+#header h1 small { font-size: 11px; color: var(--text4); font-weight: 400; margin-left: 8px; }
 
-  /* Network */
-  #network { position: absolute; top: 50px; left: 0; right: 350px; bottom: 0; }
+/* ===== Search ===== */
+#search-box { position: relative; flex: 0 0 300px; }
+#search-input { width: 100%; padding: 7px 12px; border-radius: 6px; border: 1px solid var(--border2); background: var(--bg3); color: var(--text); font-size: 14px; outline: none; }
+#search-input:focus { border-color: var(--accent); }
+#search-input::placeholder { color: var(--text5); }
+#search-results { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg3); border: 1px solid var(--border2); border-top: none; border-radius: 0 0 6px 6px; max-height: 400px; overflow-y: auto; display: none; z-index: 200; }
+.search-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--bg4); font-size: 13px; }
+.search-item:hover, .search-item.highlighted { background: color-mix(in srgb, var(--accent) 15%, var(--bg3)); }
+.search-item .org { color: var(--text4); font-size: 11px; }
+.search-item .name-en { color: var(--text3); font-size: 11px; margin-left: 6px; }
 
-  /* Detail Panel */
-  #detail-panel { position: fixed; top: 50px; right: 0; width: 350px; bottom: 0; background: #111; border-left: 1px solid #333; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; }
-  #detail-panel.empty { justify-content: center; align-items: center; }
-  #detail-placeholder { color: #555; text-align: center; font-size: 13px; }
-  #detail-content { display: none; }
-  #detail-content.active { display: block; }
+/* ===== Path Search ===== */
+#path-search-box { position: relative; flex: 0 0 240px; }
+#path-input { width: 100%; padding: 7px 12px; border-radius: 6px; border: 1px solid var(--border2); background: var(--bg3); color: var(--text); font-size: 13px; outline: none; }
+#path-input:focus { border-color: #f58231; }
+#path-input::placeholder { color: var(--text5); }
+#path-results { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg3); border: 1px solid var(--border2); border-top: none; border-radius: 0 0 6px 6px; max-height: 300px; overflow-y: auto; display: none; z-index: 200; }
 
-  .detail-name { font-size: 20px; font-weight: 700; margin-bottom: 2px; }
-  .detail-name-en { font-size: 13px; color: #888; margin-bottom: 10px; }
-  .detail-meta { font-size: 12px; color: #aaa; margin-bottom: 4px; }
-  .detail-meta b { color: #ccc; }
-  .detail-field { font-size: 12px; color: #7ab8f5; margin: 8px 0; line-height: 1.5; }
-  .detail-topic { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; margin: 6px 0 12px; }
+/* ===== Network ===== */
+#network { position: absolute; top: 50px; left: 0; right: 0; bottom: 0; }
+#network.panel-open { right: 380px; }
 
-  .section-title { font-size: 14px; font-weight: 600; color: #ddd; margin: 14px 0 8px; padding-bottom: 4px; border-bottom: 1px solid #333; }
-  .paper-item, .grant-item { font-size: 12px; color: #bbb; margin-bottom: 10px; line-height: 1.5; }
-  .paper-title { color: #eee; font-weight: 500; }
-  .paper-meta { color: #777; font-size: 11px; margin-top: 1px; }
-  .grant-cat { color: #f5a623; font-size: 11px; }
-  .grant-period { color: #777; font-size: 11px; }
-  .stat-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-right: 6px; background: #222; border: 1px solid #444; }
+/* ===== Detail Panel ===== */
+#detail-panel { position: fixed; top: 50px; right: 0; width: 380px; bottom: 0; background: var(--bg2); border-left: 1px solid var(--border); overflow-y: auto; padding: 16px; display: flex; flex-direction: column; z-index: 80; transform: translateX(100%); transition: transform 0.3s ease; pointer-events: none; }
+#detail-panel.open { transform: translateX(0); pointer-events: auto; }
+#detail-close { position: absolute; top: 8px; right: 12px; background: none; border: none; color: var(--text5); font-size: 22px; cursor: pointer; padding: 4px 8px; line-height: 1; }
+#detail-close:hover { color: var(--text); }
+#detail-content { margin-top: 8px; }
 
-  /* Mode switch */
-  #mode-switch { display: flex; gap: 0; margin-left: auto; }
-  #mode-switch button { padding: 5px 14px; font-size: 12px; border: 1px solid #444; background: #1a1a1a; color: #888; cursor: pointer; }
-  #mode-switch button:first-child { border-radius: 5px 0 0 5px; }
-  #mode-switch button:last-child { border-radius: 0 5px 5px 0; }
-  #mode-switch button.active { background: #4363d8; color: #fff; border-color: #4363d8; }
+.detail-name { font-size: 20px; font-weight: 700; margin-bottom: 2px; padding-right: 30px; }
+.detail-name-en { font-size: 13px; color: var(--text4); margin-bottom: 10px; }
+.detail-meta { font-size: 12px; color: var(--text3); margin-bottom: 4px; }
+.detail-meta b { color: var(--text2); }
+.detail-field { font-size: 12px; color: var(--field); margin: 8px 0; line-height: 1.5; }
+.detail-topic { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; margin: 6px 0 12px; }
+.detail-link { display: inline-block; margin: 4px 0 8px; font-size: 12px; color: var(--accent2); text-decoration: none; }
+.detail-link:hover { text-decoration: underline; }
 
-  /* Legend toggle */
-  #legend-toggle { cursor: pointer; color: #888; font-size: 12px; text-decoration: underline; white-space: nowrap; margin-left: 10px; }
-  #legend { position: fixed; top: 50px; left: 0; width: 250px; bottom: 0; background: rgba(10,10,10,0.92); border-right: 1px solid #333; overflow-y: auto; padding: 12px; display: none; z-index: 90; }
-  #legend.visible { display: block; }
-  #legend h3 { font-size: 13px; margin-bottom: 8px; }
-  .legend-item { display: flex; align-items: center; margin: 3px 0; font-size: 11px; color: #ccc; }
-  .legend-dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; flex-shrink: 0; }
+.section-title { font-size: 14px; font-weight: 600; color: var(--text2); margin: 14px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+.paper-item, .grant-item { font-size: 12px; color: var(--text3); margin-bottom: 10px; line-height: 1.5; }
+.paper-title { color: var(--text); font-weight: 500; }
+.paper-meta { color: var(--text4); font-size: 11px; margin-top: 1px; }
+.grant-cat { color: var(--orange); font-size: 11px; }
+.grant-period { color: var(--text4); font-size: 11px; }
+.stat-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-right: 6px; background: var(--bg4); border: 1px solid var(--border2); }
+.role-tag { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; margin-left: 4px; }
+.conn-item { padding: 6px 0; cursor: pointer; border-bottom: 1px solid var(--bg3); }
+.conn-item:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.kw-researcher-item { padding: 5px 0; cursor: pointer; border-bottom: 1px solid var(--bg3); font-size: 12px; }
+.kw-researcher-item:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.kw-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin: 2px; background: var(--bg4); border: 1px solid var(--border); cursor: pointer; }
+.kw-tag:hover { border-color: var(--accent); }
 
-  /* Loading */
-  #loading { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0a0a0a; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 500; }
-  #loading h2 { font-size: 18px; margin-bottom: 12px; }
-  #loading-bar { width: 300px; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
-  #loading-fill { height: 100%; width: 0%; background: #4363d8; transition: width 0.3s; }
-  #loading-text { margin-top: 8px; font-size: 12px; color: #888; }
+/* ===== Path Result Banner ===== */
+#path-banner { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: color-mix(in srgb, var(--bg) 95%, transparent); border: 1px solid #f58231; border-radius: 10px; padding: 12px 20px; z-index: 150; max-width: 90vw; font-size: 13px; }
+#path-banner .close-btn { position: absolute; top: 4px; right: 10px; background: none; border: none; color: var(--text4); font-size: 16px; cursor: pointer; }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: #111; }
-  ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+/* ===== View Switch ===== */
+#view-switch { display: flex; gap: 0; }
+#view-switch button { padding: 5px 14px; font-size: 12px; border: 1px solid var(--border2); background: var(--bg3); color: var(--text4); cursor: pointer; }
+#view-switch button:first-child { border-radius: 5px 0 0 5px; }
+#view-switch button:last-child { border-radius: 0 5px 5px 0; }
+#view-switch button.active { background: #f58231; color: #fff; border-color: #f58231; }
+
+/* ===== Mode Switch ===== */
+#mode-switch { display: flex; gap: 0; margin-left: auto; }
+#mode-switch button { padding: 5px 14px; font-size: 12px; border: 1px solid var(--border2); background: var(--bg3); color: var(--text4); cursor: pointer; }
+#mode-switch button:first-child { border-radius: 5px 0 0 5px; }
+#mode-switch button:last-child { border-radius: 0 5px 5px 0; }
+#mode-switch button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ===== Header Buttons ===== */
+.header-btn { background: none; border: 1px solid var(--border2); color: var(--text3); border-radius: 5px; padding: 5px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.header-btn:hover { border-color: var(--text4); color: var(--text); }
+.header-btn.active { background: var(--bg4); color: var(--text); }
+
+/* ===== Legend ===== */
+#legend { position: fixed; top: 50px; left: 0; width: 280px; bottom: 0; background: color-mix(in srgb, var(--bg) 95%, transparent); border-right: 1px solid var(--border); overflow-y: auto; padding: 12px; display: none; z-index: 90; }
+#legend.visible { display: block; }
+#legend h3 { font-size: 13px; margin-bottom: 8px; }
+.legend-item { display: flex; align-items: center; margin: 3px 0; font-size: 11px; color: var(--text2); cursor: pointer; padding: 2px 4px; border-radius: 4px; }
+.legend-item:hover { background: var(--bg4); }
+.legend-item.dimmed { opacity: 0.3; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; flex-shrink: 0; }
+.legend-count { margin-left: auto; color: var(--text5); font-size: 10px; padding-left: 6px; }
+#legend-reset { display: none; margin: 8px 0; padding: 4px 10px; font-size: 11px; background: var(--bg4); border: 1px solid var(--border2); color: var(--text2); border-radius: 4px; cursor: pointer; width: 100%; }
+#legend-reset:hover { background: var(--border2); }
+
+/* ===== Modals ===== */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 300; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
+.modal-overlay.open { display: flex; }
+.modal-box { background: var(--bg3); border: 1px solid var(--border2); border-radius: 12px; max-width: 650px; width: 92%; max-height: 82vh; overflow-y: auto; padding: 24px; position: relative; }
+.modal-close { position: absolute; top: 12px; right: 16px; background: none; border: none; color: var(--text4); font-size: 22px; cursor: pointer; }
+.modal-close:hover { color: var(--text); }
+.modal-box h2 { font-size: 18px; margin-bottom: 14px; }
+.modal-box h3 { font-size: 14px; color: var(--text); margin: 14px 0 6px; }
+.modal-box p, .modal-box li { font-size: 13px; line-height: 1.8; color: var(--text2); }
+.modal-box ul { padding-left: 20px; }
+
+/* ===== Stats Grid ===== */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin: 12px 0; }
+.stats-card { background: var(--bg4); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
+.stats-card .num { font-size: 22px; font-weight: 700; color: var(--accent2); }
+.stats-card .label { font-size: 11px; color: var(--text4); margin-top: 4px; }
+.stats-topic-bar { display: flex; align-items: center; margin: 4px 0; font-size: 12px; gap: 8px; }
+.stats-topic-bar .bar { flex: 1; height: 8px; background: var(--bg4); border-radius: 4px; overflow: hidden; }
+.stats-topic-bar .bar-fill { height: 100%; border-radius: 4px; }
+
+/* ===== Loading ===== */
+#loading { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 500; }
+#loading h2 { font-size: 18px; margin-bottom: 12px; }
+#loading-bar { width: 300px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+#loading-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.3s; }
+#loading-text { margin-top: 8px; font-size: 12px; color: var(--text4); }
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ===== Responsive ===== */
+@media (max-width: 900px) {
+  #header { gap: 8px; padding: 6px 10px; }
+  #header h1 small { display: none; }
+  #search-box { flex: 1 1 180px; min-width: 140px; }
+  #path-search-box { flex: 1 1 160px; min-width: 120px; }
+  #network { top: 46px; }
+  #network.panel-open { right: 0; }
+  #detail-panel { width: 100%; top: auto; bottom: 0; height: 55vh; border-left: none; border-top: 1px solid var(--border2); border-radius: 16px 16px 0 0; transform: translateY(100%); }
+  #detail-panel.open { transform: translateY(0); }
+  #legend { width: 100%; top: 46px; border-right: none; }
+}
+@media (max-width: 600px) {
+  #header h1 { font-size: 14px; }
+  #mode-switch button { padding: 4px 10px; font-size: 11px; }
+  .header-btn { padding: 4px 8px; font-size: 11px; }
+  #search-box { flex: 1 1 100%; }
+  #path-search-box { flex: 1 1 100%; }
+}
+
+/* ===== Skip Link (a11y) ===== */
+.skip-link { position: absolute; top: -40px; left: 0; background: var(--accent); color: #fff; padding: 8px 16px; z-index: 1000; font-size: 14px; text-decoration: none; }
+.skip-link:focus { top: 0; }
 </style>
 </head>
 <body>
 
+<!-- Skip Link (a11y) -->
+<a href="#network" class="skip-link">ネットワークにスキップ</a>
+
 <!-- Loading Screen -->
-<div id="loading">
-  <h2>UOsaka Research Landscape</h2>
-  <div id="loading-bar"><div id="loading-fill"></div></div>
+<div id="loading" role="status" aria-live="polite">
+  <h2>U-Osaka Ecological Map</h2>
+  <div id="loading-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="loading-fill"></div></div>
   <div id="loading-text">データを読み込み中...</div>
 </div>
 
 <!-- Header -->
-<div id="header">
-  <h1>UOsaka Research Landscape<small>大阪大学 研究者マップ</small></h1>
-  <div id="search-box">
-    <input type="text" id="search-input" placeholder="研究者を検索（名前・所属・分野）..." autocomplete="off">
-    <div id="search-results"></div>
+<header id="header" role="banner">
+  <h1>U-Osaka Ecological Map<small>大阪大学 研究者エコロジカルマップ</small></h1>
+  <div id="search-box" role="search" aria-label="研究者検索">
+    <input type="text" id="search-input" placeholder="研究者を検索（名前・所属・分野）..." autocomplete="off" aria-label="研究者を検索" aria-controls="search-results" aria-expanded="false">
+    <div id="search-results" role="listbox" aria-label="検索結果"></div>
   </div>
-  <div id="mode-switch">
-    <button class="active" onclick="switchMode('topic')">トピック</button>
-    <button onclick="switchMode('dept')">部局</button>
+  <div id="path-search-box" aria-label="経路検索">
+    <input type="text" id="path-input" placeholder="経路検索（2人目を入力）..." autocomplete="off" disabled aria-label="経路検索の相手を入力">
+    <div id="path-results" role="listbox"></div>
   </div>
-  <span id="legend-toggle" onclick="toggleLegend()">凡例 ▼</span>
-  <span id="about-btn" onclick="toggleAbout()" title="このマップについて" style="cursor:pointer;font-size:18px;margin-left:10px;">&#x1F4D6;</span>
-</div>
+  <div id="view-switch" role="radiogroup" aria-label="ネットワーク切替">
+    <button class="active" data-view="researcher" role="radio" aria-checked="true">研究者</button>
+    <button data-view="keyword" role="radio" aria-checked="false">キーワード</button>
+  </div>
+  <div id="mode-switch" role="radiogroup" aria-label="色分けモード">
+    <button class="active" data-mode="topic" role="radio" aria-checked="true">トピック</button>
+    <button data-mode="dept" role="radio" aria-checked="false">部局</button>
+  </div>
+  <button class="header-btn" id="legend-toggle" aria-expanded="false" aria-controls="legend">凡例</button>
+  <button class="header-btn" id="stats-btn" aria-label="統計を表示">統計</button>
+  <button class="header-btn" id="export-btn" aria-label="画像として保存">保存</button>
+  <button class="header-btn" id="theme-btn" aria-label="テーマ切替">明/暗</button>
+  <button class="header-btn" id="about-btn" aria-label="概要を表示">概要</button>
+</header>
 
 <!-- About Modal -->
-<div id="about-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:300;background:rgba(0,0,0,0.7);justify-content:center;align-items:center;">
-  <div style="background:#1a1a1a;border:1px solid #444;border-radius:12px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;padding:24px;position:relative;">
-    <button onclick="toggleAbout()" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#888;font-size:20px;cursor:pointer;">&times;</button>
-    <h2 style="font-size:18px;margin-bottom:12px;">UOsaka Research Landscape について</h2>
-    <div style="font-size:13px;line-height:1.8;color:#ccc;">
+<div class="modal-overlay" id="about-modal" role="dialog" aria-modal="true" aria-labelledby="about-title">
+  <div class="modal-box">
+    <button class="modal-close" data-modal="about-modal" aria-label="閉じる">&times;</button>
+    <h2 id="about-title">U-Osaka Ecological Map について</h2>
+    <div>
       <p>大阪大学（University of Osaka）に所属する研究者のネットワークをインタラクティブに可視化したマップです。</p>
-      <h3 style="font-size:14px;color:#eee;margin:14px 0 6px;">データソース</h3>
-      <ul style="padding-left:20px;">
-        <li><b>大阪大学研究者総覧</b>（rd.iai.osaka-u.ac.jp）— 研究者リスト・所属・研究分野</li>
-        <li><b>researchmap</b>（researchmap.jp）— 論文・著書・研究発表・助成金の詳細情報</li>
+      <h3>データソース</h3>
+      <ul>
+        <li><b>大阪大学研究者総覧</b>（rd.iai.osaka-u.ac.jp）-- 研究者リスト・所属・研究分野</li>
+        <li><b>researchmap</b>（researchmap.jp）-- 論文・著書・研究発表・助成金の詳細情報</li>
       </ul>
-      <h3 style="font-size:14px;color:#eee;margin:14px 0 6px;">ネットワークの構築方法</h3>
-      <p><b>ノード</b>：各研究者を1つのノードとして表示しています。ノードの大きさはつながりの数（次数）に比例します。</p>
-      <p><b>エッジ（つながり）</b>は以下の2種類の基準で構築されています：</p>
-      <ul style="padding-left:20px;">
-        <li><b>共著・共同研究関係</b> — 論文の共著者や科研費の共同研究者として名前が共に出現する回数をカウントし、重みとしています。</li>
-        <li><b>トピック類似度</b> — 各研究者の論文タイトル・研究発表・助成金タイトルをコーパスとし、TF-IDFベクトルのコサイン類似度を計算。閾値（0.15）を超えるペアにエッジを追加しています。</li>
+      <h3>ネットワークの構築方法</h3>
+      <p><b>ノード</b>：各研究者を1つのノードとして表示。ノードの大きさはつながりの数（次数）に比例します。</p>
+      <p><b>エッジ（つながり）</b>は以下の2種類：</p>
+      <ul>
+        <li><b>共著・共同研究関係</b>（実線）-- 論文の共著者や科研費の共同研究者として名前が共に出現する回数をカウント</li>
+        <li><b>トピック類似度</b>（破線）-- TF-IDFベクトルのコサイン類似度（閾値0.15以上）</li>
       </ul>
-      <h3 style="font-size:14px;color:#eee;margin:14px 0 6px;">色分けモード</h3>
-      <ul style="padding-left:20px;">
-        <li><b>トピックモード</b> — BERTopic（多言語対応の埋め込みモデル＋クラスタリング）により、研究内容を30のトピックに自動分類し、トピック別に色分けしています。</li>
-        <li><b>部局モード</b> — 研究者の所属部局（研究科・研究所等）ごとに色分けしています。</li>
+      <h3>色分けモード</h3>
+      <ul>
+        <li><b>トピックモード</b> -- BERTopicにより研究内容を30のトピックに自動分類し色分け</li>
+        <li><b>部局モード</b> -- 所属部局（研究科・研究所等）ごとに色分け</li>
       </ul>
-      <h3 style="font-size:14px;color:#eee;margin:14px 0 6px;">つながり強度（%）</h3>
-      <p>詳細パネルに表示される「つながり%」は、選択した研究者との関係の強さを示します。共著件数×5 ＋ トピック類似度を合算したスコアを、最も強いつながりを100%として正規化しています。</p>
-      <h3 style="font-size:14px;color:#eee;margin:14px 0 6px;">操作方法</h3>
-      <ul style="padding-left:20px;">
+      <h3>つながり強度（%）</h3>
+      <p>詳細パネルの「つながり%」は、共著件数×5 + トピック類似度のスコアを最大値で正規化した値です。</p>
+      <h3>操作方法</h3>
+      <ul>
         <li>検索バーで研究者を名前・所属・分野で検索</li>
         <li>ノードをクリックで選択 → 右パネルに詳細表示</li>
+        <li>研究者選択後「経路検索」で2人の最短経路を表示</li>
+        <li>凡例のトピック/部局をクリックでフィルタリング</li>
         <li>マウスホイールでズーム、ドラッグで移動</li>
-        <li>「トピック / 部局」ボタンで色分けモード切替</li>
+        <li>「保存」ボタンでネットワーク画像をPNGで保存</li>
       </ul>
+      <h3>データについて</h3>
+      <p>データ最終更新: <span id="data-date">--</span></p>
     </div>
   </div>
 </div>
 
-<!-- Legend -->
-<div id="legend">
-  <h3 id="legend-title">Research Topics</h3>
-  <div id="legend-items"></div>
+<!-- Stats Modal -->
+<div class="modal-overlay" id="stats-modal" role="dialog" aria-modal="true" aria-labelledby="stats-title">
+  <div class="modal-box">
+    <button class="modal-close" data-modal="stats-modal" aria-label="閉じる">&times;</button>
+    <h2 id="stats-title">ネットワーク統計</h2>
+    <div id="stats-content"></div>
+  </div>
 </div>
 
+<!-- Legend -->
+<nav id="legend" role="navigation" aria-label="凡例">
+  <h3 id="legend-title">Research Topics</h3>
+  <button id="legend-reset">フィルタ解除</button>
+  <div id="legend-items"></div>
+</nav>
+
 <!-- Network -->
-<div id="network"></div>
+<div id="network" role="img" aria-label="研究者ネットワーク可視化"></div>
 
 <!-- Detail Panel -->
-<div id="detail-panel" class="empty">
-  <div id="detail-placeholder">
-    研究者を検索するか<br>ノードをクリックしてください
-  </div>
+<aside id="detail-panel" role="complementary" aria-label="研究者詳細">
+  <button id="detail-close" aria-label="パネルを閉じる">&times;</button>
   <div id="detail-content"></div>
+</aside>
+
+<!-- Path Result Banner -->
+<div id="path-banner" role="status" aria-live="polite">
+  <button class="close-btn" id="path-banner-close" aria-label="閉じる">&times;</button>
+  <div id="path-banner-content"></div>
 </div>
 
 <script>
+/* ===== Constants ===== */
 const COLORS = [
   '#e6194b','#3cb44b','#ffe119','#4363d8','#f58231',
   '#911eb4','#42d4f4','#f032e6','#bfef45','#fabed4',
@@ -167,158 +310,357 @@ const COLORS = [
   '#9b59b6','#f39c12','#1abc9c','#e67e22','#2c3e50',
 ];
 
-let network, nodesDataset, edgesDataset, researcherData = {}, nodeIndex = [];
-let netData, currentMode = 'topic', orgColors = {};
+/* ===== Researcher data key mapping (short -> readable) ===== */
+const R = { n:'n', ne:'ne', o:'o', o1:'o1', j:'j', f:'f', t:'t', np:'np', ng:'ng', pp:'pp', gg:'gg' };
 
+/* ===== State ===== */
+let network, nodesDataset, edgesDataset;
+let researcherData = {}, nodeIndex = [], netData;
+let currentMode = 'topic', orgColors = {}, topicLabels = {};
+let selectedNodeId = null, activeFilter = null;
+let searchHighlightIdx = -1;
+let lastScale = 1;
+let nodeDegreeCache = {};
+let hoverDimmed = false;
+let currentView = 'researcher'; // 'researcher' or 'keyword'
+let kwData = null; // keyword network data (lazy loaded)
+let kwNodesDataset = null, kwEdgesDataset = null;
+let kwNodeDegreeCache = {};
+let kwNodeIndex = [];
+
+/* ===== Utility ===== */
+const _escDiv = document.createElement('div');
+function esc(s) { if (!s) return ''; _escDiv.textContent = s; return _escDiv.innerHTML; }
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+
+/* helper to read researcher fields with short keys */
+function rd(info, key) {
+  return info[key] || '';
+}
+
+/* ===== Init ===== */
 async function init() {
-  const loadingFill = document.getElementById('loading-fill');
-  const loadingText = document.getElementById('loading-text');
+  const fill = document.getElementById('loading-fill');
+  const text = document.getElementById('loading-text');
 
-  // Load data
-  loadingText.textContent = 'ネットワークデータを読み込み中...';
-  loadingFill.style.width = '20%';
+  try {
+
+  text.textContent = 'ネットワークデータを読み込み中...';
+  fill.style.width = '20%';
   const netResp = await fetch('network.json');
+  if (!netResp.ok) throw new Error(`network.json: ${netResp.status}`);
   netData = await netResp.json();
   orgColors = netData.org_colors || {};
+  topicLabels = netData.topic_labels || {};
+  if (netData.last_updated) document.getElementById('data-date').textContent = netData.last_updated;
 
-  loadingText.textContent = '研究者データを読み込み中...';
-  loadingFill.style.width = '50%';
+  text.textContent = '研究者データを読み込み中...';
+  fill.style.width = '50%';
   const resResp = await fetch('researchers.json');
+  if (!resResp.ok) throw new Error(`researchers.json: ${resResp.status}`);
   researcherData = await resResp.json();
 
-  loadingText.textContent = 'ネットワークを構築中...';
-  loadingFill.style.width = '70%';
+  text.textContent = 'ネットワークを構築中...';
+  fill.style.width = '70%';
+
+  // Check if nodes have pre-computed positions
+  const hasPositions = netData.nodes.length > 0 && netData.nodes[0].x !== undefined;
 
   // Build search index
   nodeIndex = netData.nodes.map(n => {
     const info = researcherData[n.id] || {};
     return {
       id: n.id,
-      name: info.name || n.name || n.id,
-      name_en: info.name_en || '',
-      org: info.org || '',
-      org_lv1: info.org_lv1 || '',
-      field: info.field || '',
-      job: info.job || '',
+      name: rd(info, 'n') || n.name || n.id,
+      name_en: rd(info, 'ne'),
+      org: rd(info, 'o'),
+      org_lv1: rd(info, 'o1'),
+      field: rd(info, 'f'),
+      job: rd(info, 'j'),
     };
   });
 
   // Create vis datasets
-  nodesDataset = new vis.DataSet(netData.nodes.map(n => ({
-    id: n.id,
-    label: n.label,
-    color: { background: n.color, border: n.color, highlight: { background: '#fff', border: n.color } },
-    size: n.size,
-    font: { color: '#fff', size: 10, strokeWidth: 2, strokeColor: '#000' },
-    borderWidth: 1.5,
-    group: n.group,
-    origTopicColor: n.color,
-    org_lv1: n.org_lv1 || '',
-  })));
+  nodesDataset = new vis.DataSet(netData.nodes.map(n => {
+    const entry = {
+      id: n.id, label: '',
+      fullLabel: n.label,
+      color: { background: n.color, border: n.color, highlight: { background: '#fff', border: n.color } },
+      size: n.size,
+      font: { color: '#fff', size: 10, strokeWidth: 2, strokeColor: '#000' },
+      borderWidth: 1.5,
+      group: n.group,
+      origTopicColor: n.color,
+      org_lv1: n.org_lv1 || '',
+      hidden: false,
+    };
+    if (hasPositions) { entry.x = n.x; entry.y = n.y; entry.fixed = { x: true, y: true }; }
+    return entry;
+  }));
 
-  edgesDataset = new vis.DataSet(netData.edges.map((e, i) => ({
-    id: i,
-    from: e.from,
-    to: e.to,
-    width: e.width,
-    origWeight: e.origWeight || 0,
-    origTopicSim: e.origTopicSim || 0,
-    color: { color: '#333', highlight: '#888', opacity: 0.4 },
-    smooth: { type: 'continuous' },
-  })));
+  edgesDataset = new vis.DataSet(netData.edges.map((e, i) => {
+    const isCoauthor = (e.origWeight || 0) > 0;
+    return {
+      id: i, from: e.from, to: e.to, width: e.width,
+      origWeight: e.origWeight || 0, origTopicSim: e.origTopicSim || 0,
+      color: { color: isCoauthor ? '#444' : '#2a2a3a', highlight: '#888', opacity: isCoauthor ? 0.5 : 0.3 },
+      dashes: isCoauthor ? false : [4, 4],
+      smooth: { type: 'continuous' },
+    };
+  }));
 
-  loadingText.textContent = 'レイアウトを計算中...';
-  loadingFill.style.width = '85%';
+  text.textContent = hasPositions ? 'ネットワークを描画中...' : 'レイアウトを計算中...';
+  fill.style.width = '85%';
 
-  // Create network
+  const physicsConfig = hasPositions
+    ? { enabled: false }
+    : {
+        forceAtlas2Based: { gravitationalConstant: -60, centralGravity: 0.008, springLength: 120, springConstant: 0.02, damping: 0.4 },
+        solver: 'forceAtlas2Based', maxVelocity: 40, timestep: 0.35,
+        stabilization: { enabled: true, iterations: 250, updateInterval: 25 },
+      };
+
   const container = document.getElementById('network');
   network = new vis.Network(container, { nodes: nodesDataset, edges: edgesDataset }, {
-    physics: {
-      forceAtlas2Based: { gravitationalConstant: -60, centralGravity: 0.008, springLength: 120, springConstant: 0.02, damping: 0.4 },
-      solver: 'forceAtlas2Based',
-      maxVelocity: 40,
-      timestep: 0.35,
-      stabilization: { enabled: true, iterations: 250, updateInterval: 25 },
-    },
+    physics: physicsConfig,
     nodes: { shape: 'dot', borderWidth: 1.5 },
     edges: { selectionWidth: 2 },
-    interaction: { hover: true, tooltipDelay: 300, navigationButtons: true, keyboard: true },
+    interaction: { hover: true, tooltipDelay: 200, navigationButtons: true, keyboard: true, multiselect: false, zoomView: true },
   });
 
-  network.on('stabilizationProgress', (params) => {
-    const pct = 85 + (params.iterations / params.total) * 15;
-    loadingFill.style.width = pct + '%';
-    loadingText.textContent = `レイアウト計算中... ${Math.round(params.iterations/params.total*100)}%`;
-  });
-
-  network.on('stabilizationIterationsDone', () => {
-    loadingFill.style.width = '100%';
-    loadingText.textContent = '完了';
-    network.setOptions({ physics: { enabled: false } });
+  function onReady() {
+    fill.style.width = '100%';
+    text.textContent = '完了';
     setTimeout(() => { document.getElementById('loading').style.display = 'none'; }, 300);
-  });
+    nodesDataset.forEach(n => { nodeDegreeCache[n.id] = network.getConnectedNodes(n.id).length; });
+    updateLabelsForZoom();
+    handleHashChange();
+  }
 
-  // Click handler
+  if (hasPositions) {
+    network.once('afterDrawing', onReady);
+  } else {
+    network.on('stabilizationProgress', (params) => {
+      const pct = 85 + (params.iterations / params.total) * 15;
+      fill.style.width = pct + '%';
+      text.textContent = `レイアウト計算中... ${Math.round(params.iterations / params.total * 100)}%`;
+    });
+    network.on('stabilizationIterationsDone', () => {
+      network.setOptions({ physics: { enabled: false } });
+      onReady();
+    });
+  }
+
+  // Click handler: select node or deselect
   network.on('click', (params) => {
     if (params.nodes.length > 0) {
-      showDetail(params.nodes[0]);
+      if (currentView === 'keyword') {
+        showKeywordDetail(params.nodes[0]);
+      } else {
+        showDetail(params.nodes[0]);
+      }
+    } else {
+      closeDetail();
     }
   });
 
-  // Build legend
-  buildLegend();
+  // Double-click: open researchmap (researcher) or show detail (keyword)
+  network.on('doubleClick', (params) => {
+    if (params.nodes.length > 0) {
+      params.event.preventDefault();
+      const nodeId = params.nodes[0];
+      if (currentView === 'keyword') {
+        showKeywordDetail(nodeId);
+      } else {
+        window.open(`https://researchmap.jp/${encodeURIComponent(nodeId)}`, '_blank', 'noopener');
+      }
+    }
+  });
 
-  // Search setup
+  // Hover: tooltip + neighbor highlight
+  const debouncedDim = debounce((nodeId) => {
+    const ds = currentView === 'keyword' ? kwNodesDataset : nodesDataset;
+    if (!ds) return;
+    const neighbors = new Set(network.getConnectedNodes(nodeId));
+    neighbors.add(nodeId);
+    const updates = [];
+    ds.forEach(n => {
+      const newOp = neighbors.has(n.id) ? 1 : 0.12;
+      if (n.opacity !== newOp) updates.push({ id: n.id, opacity: newOp });
+    });
+    if (updates.length > 0) { ds.update(updates); hoverDimmed = true; }
+  }, 80);
+
+  network.on('hoverNode', (params) => {
+    if (currentView === 'keyword') {
+      const kwNode = kwData?.nodes.find(n => n.id === params.node);
+      if (kwNode) {
+        kwNodesDataset.update({ id: params.node, title: `${kwNode.id}\n関連研究者: ${kwNode.count}名` });
+      }
+    } else {
+      const info = researcherData[params.node];
+      if (!info) return;
+      const tip = `${rd(info,'n')}（${rd(info,'ne')}）\n${rd(info,'o1')} ${rd(info,'o')}\n${rd(info,'t')}`;
+      nodesDataset.update({ id: params.node, title: tip });
+    }
+    debouncedDim(params.node);
+  });
+
+  network.on('blurNode', () => {
+    if (!hoverDimmed) return;
+    const ds = currentView === 'keyword' ? kwNodesDataset : nodesDataset;
+    if (!ds) return;
+    const updates = [];
+    ds.forEach(n => { if (n.opacity !== 1) updates.push({ id: n.id, opacity: 1 }); });
+    if (updates.length > 0) ds.update(updates);
+    hoverDimmed = false;
+  });
+
+  // Zoom-based label display
+  network.on('zoom', () => { updateLabelsForZoom(); });
+  network.on('animationFinished', () => { updateLabelsForZoom(); });
+
+  // Resize handler
+  window.addEventListener('resize', debounce(() => { if (network) network.redraw(); }, 250));
+
+  buildLegend();
   setupSearch();
+  setupPathSearch();
+  setupModals();
+  setupModeSwitch();
+  setupViewSwitch();
+  setupEventDelegation();
+  setupExport();
+  setupThemeToggle();
+
+  window.addEventListener('hashchange', handleHashChange);
+
+  // Esc key for modals & panel
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      // Close open modal first, then panel
+      const openModal = document.querySelector('.modal-overlay.open');
+      if (openModal) { openModal.classList.remove('open'); return; }
+      if (selectedNodeId) { closeDetail(); return; }
+      const legend = document.getElementById('legend');
+      if (legend.classList.contains('visible')) { legend.classList.remove('visible'); document.getElementById('legend-toggle').classList.remove('active'); }
+    }
+  });
+
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
+  } catch (err) {
+    document.getElementById('loading-text').textContent = `読み込みエラー: ${err.message}`;
+    document.getElementById('loading-fill').style.background = '#e6194b';
+    document.getElementById('loading-fill').style.width = '100%';
+    console.error('Init error:', err);
+  }
 }
 
+/* ===== Zoom-based Labels ===== */
+function updateLabelsForZoom() {
+  const scale = network.getScale();
+  if (Math.abs(scale - lastScale) < 0.05 && scale !== 1) return;
+  lastScale = scale;
+  const threshold = scale > 0.8 ? 2 : scale > 0.5 ? 5 : scale > 0.3 ? 10 : 999;
+  const updates = [];
+  nodesDataset.forEach(n => {
+    const degree = nodeDegreeCache[n.id] || 0;
+    const newLabel = degree >= threshold ? (n.fullLabel || '') : '';
+    if (n.label !== newLabel) updates.push({ id: n.id, label: newLabel });
+  });
+  if (updates.length > 0) nodesDataset.update(updates);
+}
+
+/* ===== URL Hash ===== */
+function handleHashChange() {
+  const hash = window.location.hash;
+  if (!hash) return;
+  const params = new URLSearchParams(hash.substring(1));
+  const id = params.get('id');
+  if (id && researcherData[id]) showDetail(id);
+}
+
+function updateHash(nodeId) {
+  if (nodeId) {
+    history.replaceState(null, '', '#id=' + encodeURIComponent(nodeId));
+  } else {
+    history.replaceState(null, '', window.location.pathname);
+  }
+}
+
+/* ===== Detail Panel ===== */
 function showDetail(nodeId) {
   const info = researcherData[nodeId];
   if (!info) return;
 
+  selectedNodeId = nodeId;
+  updateHash(nodeId);
+
+  const pathInput = document.getElementById('path-input');
+  pathInput.disabled = false;
+  pathInput.placeholder = `${rd(info,'n')} → ?（経路検索）`;
+
   const panel = document.getElementById('detail-panel');
   const content = document.getElementById('detail-content');
-  const placeholder = document.getElementById('detail-placeholder');
+  const networkDiv = document.getElementById('network');
 
-  panel.classList.remove('empty');
-  placeholder.style.display = 'none';
-  content.classList.add('active');
+  panel.classList.add('open');
+  networkDiv.classList.add('panel-open');
 
-  const topicColor = info.topic ? COLORS[parseInt(nodesDataset.get(nodeId)?.group) % COLORS.length] || '#888' : '#888';
+  const node = nodesDataset.get(nodeId);
+  const topicColor = rd(info,'t') ? COLORS[parseInt(node?.group) % COLORS.length] || '#888' : '#888';
 
   let html = `
-    <div class="detail-name">${esc(info.name)}</div>
-    <div class="detail-name-en">${esc(info.name_en)}</div>
-    <div class="detail-meta"><b>所属:</b> ${esc(info.org_lv1)} ${esc(info.org)}</div>
-    <div class="detail-meta"><b>職位:</b> ${esc(info.job)}</div>
-    <div class="detail-field">${esc(info.field)}</div>
-    <div class="detail-topic" style="background:${topicColor}33;border:1px solid ${topicColor};color:${topicColor}">${esc(info.topic || 'N/A')}</div>
-    <div>
-      <span class="stat-badge">論文 ${info.n_papers}</span>
-      <span class="stat-badge">助成金 ${info.n_grants}</span>
+    <div class="detail-name">${esc(rd(info,'n'))}</div>
+    <div class="detail-name-en">${esc(rd(info,'ne'))}</div>
+    <div class="detail-meta"><b>所属:</b> ${esc(rd(info,'o1'))} ${esc(rd(info,'o'))}</div>
+    <div class="detail-meta"><b>職位:</b> ${esc(rd(info,'j'))}</div>
+    <div class="detail-field">${esc(rd(info,'f'))}</div>
+    <div class="detail-topic" style="background:${topicColor}33;border:1px solid ${topicColor};color:${topicColor}">${esc(rd(info,'t') || 'N/A')}</div>
+    <br>
+    <a class="detail-link" href="https://researchmap.jp/${encodeURIComponent(nodeId)}" target="_blank" rel="noopener">researchmap で見る &rarr;</a>
+    <div style="margin-top:6px">
+      <span class="stat-badge">論文 ${info.np || 0}</span>
+      <span class="stat-badge">助成金 ${info.ng || 0}</span>
     </div>
   `;
 
-  if (info.papers && info.papers.length > 0) {
-    html += `<div class="section-title">主な論文 (${info.n_papers}件中)</div>`;
-    for (const p of info.papers) {
-      const roleTag = p.role ? `<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:10px;margin-left:4px;background:${p.role.includes('第一') ? '#4363d833' : p.role.includes('ラスト') ? '#e6194b33' : '#33333366'};color:${p.role.includes('第一') ? '#7ab8f5' : p.role.includes('ラスト') ? '#f08080' : '#aaa'};border:1px solid ${p.role.includes('第一') ? '#4363d855' : p.role.includes('ラスト') ? '#e6194b55' : '#44444466'}">${esc(p.role)}</span>` : '';
+  // Papers
+  const papers = info.pp || [];
+  if (papers.length > 0) {
+    html += `<div class="section-title">主な論文 (${info.np || 0}件中)</div>`;
+    for (const p of papers) {
+      let roleTag = '';
+      if (p.r) {
+        const isFirst = p.r.includes('第一');
+        const isLast = p.r.includes('ラスト');
+        const bg = isFirst ? '#4363d833' : isLast ? '#e6194b33' : '#33333366';
+        const fg = isFirst ? '#7ab8f5' : isLast ? '#f08080' : '#aaa';
+        const bd = isFirst ? '#4363d855' : isLast ? '#e6194b55' : '#44444466';
+        roleTag = `<span class="role-tag" style="background:${bg};color:${fg};border:1px solid ${bd}">${esc(p.r)}</span>`;
+      }
       html += `<div class="paper-item">
-        <div class="paper-title">${esc(p.title)}${roleTag}</div>
-        <div class="paper-meta">${esc(p.journal || '')} ${esc(p.date || '')}</div>
+        <div class="paper-title">${esc(p.t)}${roleTag}</div>
+        <div class="paper-meta">${esc(p.j || '')} ${esc(p.d || '')}</div>
       </div>`;
     }
   }
 
-  if (info.grants && info.grants.length > 0) {
-    html += `<div class="section-title">主な助成金 (${info.n_grants}件中)</div>`;
-    for (const g of info.grants) {
-      const roleColor = g.role === '研究代表者' ? '#f5a623' : '#888';
-      const roleTag = g.role ? `<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:10px;background:${roleColor}22;color:${roleColor};border:1px solid ${roleColor}44;margin-left:4px;">${esc(g.role)}</span>` : '';
+  // Grants
+  const grants = info.gg || [];
+  if (grants.length > 0) {
+    html += `<div class="section-title">主な助成金 (${info.ng || 0}件中)</div>`;
+    for (const g of grants) {
+      const roleColor = g.r === '研究代表者' ? '#f5a623' : '#888';
+      const roleTag = g.r ? `<span class="role-tag" style="background:${roleColor}22;color:${roleColor};border:1px solid ${roleColor}44">${esc(g.r)}</span>` : '';
       html += `<div class="grant-item">
-        <div class="paper-title">${esc(g.title)}${roleTag}</div>
-        <div class="grant-cat">${esc(g.category || '')}</div>
-        <div class="grant-period">${esc(g.from || '')} ~ ${esc(g.to || '')}</div>
+        <div class="paper-title">${esc(g.t)}${roleTag}</div>
+        <div class="grant-cat">${esc(g.c || '')}</div>
+        <div class="grant-period">${esc(g.f || '')} ~ ${esc(g.to || '')}</div>
       </div>`;
     }
   }
@@ -326,13 +668,11 @@ function showDetail(nodeId) {
   // Connected researchers
   const neighbors = network.getConnectedNodes(nodeId);
   if (neighbors.length > 0) {
-    // Get edge data for weights
     const connections = [];
+    const edgeIds = network.getConnectedEdges(nodeId);
     for (const nid of neighbors) {
       const nInfo = researcherData[nid];
       if (!nInfo) continue;
-      // Find edge between nodeId and nid
-      const edgeIds = network.getConnectedEdges(nodeId);
       let weight = 0, topicSim = 0;
       for (const eid of edgeIds) {
         const ed = edgesDataset.get(eid);
@@ -342,99 +682,269 @@ function showDetail(nodeId) {
           break;
         }
       }
-      const score = weight * 5 + topicSim;
-      connections.push({ id: nid, name: nInfo.name, org: nInfo.org_lv1, weight, topicSim, score });
+      connections.push({ id: nid, name: rd(nInfo,'n'), org: rd(nInfo,'o1'), weight, topicSim, score: weight * 5 + topicSim });
     }
     connections.sort((a, b) => b.score - a.score);
-
-    // Normalize scores for percentage display
     const maxScore = connections.length > 0 ? connections[0].score : 1;
 
     html += `<div class="section-title">つながり (${connections.length}名)</div>`;
-    for (const c of connections.slice(0, 15)) {
+    for (const c of connections.slice(0, 20)) {
       const pct = maxScore > 0 ? Math.round(c.score / maxScore * 100) : 0;
       const barColor = currentMode === 'dept' ? (orgColors[c.org] || '#888') : '#4363d8';
-      html += `<div class="paper-item" style="cursor:pointer" onclick="showDetail('${c.id}')">
+      html += `<div class="conn-item" data-researcher-id="${esc(c.id)}">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span class="paper-title" style="font-size:12px">${esc(c.name)}</span>
-          <span style="color:#888;font-size:11px;flex-shrink:0;margin-left:8px">${pct}%</span>
+          <span style="color:var(--text4);font-size:11px;flex-shrink:0;margin-left:8px">${pct}%</span>
         </div>
-        <div style="background:#222;height:3px;border-radius:2px;margin-top:3px">
+        <div style="background:var(--bg4);height:3px;border-radius:2px;margin-top:3px">
           <div style="background:${barColor};height:100%;width:${pct}%;border-radius:2px"></div>
         </div>
-        <div style="color:#666;font-size:10px;margin-top:1px">${esc(c.org)}${c.weight > 0 ? ' / 共著' + c.weight + '件' : ''}${c.topicSim > 0 ? ' / 類似度' + (c.topicSim * 100).toFixed(0) + '%' : ''}</div>
+        <div style="color:var(--text5);font-size:10px;margin-top:1px">${esc(c.org)}${c.weight > 0 ? ' / 共著' + c.weight + '件' : ''}${c.topicSim > 0 ? ' / 類似度' + (c.topicSim * 100).toFixed(0) + '%' : ''}</div>
       </div>`;
     }
-    if (connections.length > 15) {
-      html += `<div style="color:#666;font-size:11px;text-align:center">...他 ${connections.length - 15}名</div>`;
+    if (connections.length > 20) {
+      html += `<div style="color:var(--text5);font-size:11px;text-align:center;padding:6px 0">...他 ${connections.length - 20}名</div>`;
     }
   }
 
   content.innerHTML = html;
-
-  // Highlight node
   network.selectNodes([nodeId]);
   network.focus(nodeId, { scale: 1.5, animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
 }
 
+function closeDetail() {
+  selectedNodeId = null;
+  updateHash(null);
+  document.getElementById('detail-panel').classList.remove('open');
+  document.getElementById('network').classList.remove('panel-open');
+  const pathInput = document.getElementById('path-input');
+  pathInput.disabled = true;
+  pathInput.placeholder = '経路検索（2人目を入力）...';
+  network.unselectAll();
+}
+
+/* ===== Event Delegation ===== */
+function setupEventDelegation() {
+  document.getElementById('detail-content').addEventListener('click', (e) => {
+    const item = e.target.closest('.conn-item');
+    if (item && item.dataset.researcherId) showDetail(item.dataset.researcherId);
+  });
+
+  document.addEventListener('click', (e) => {
+    const closeBtn = e.target.closest('.modal-close');
+    if (closeBtn && closeBtn.dataset.modal) document.getElementById(closeBtn.dataset.modal).classList.remove('open');
+    if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('open');
+  });
+
+  document.getElementById('detail-close').addEventListener('click', closeDetail);
+
+  document.getElementById('path-banner-close').addEventListener('click', () => {
+    document.getElementById('path-banner').style.display = 'none';
+    network.unselectAll();
+    if (selectedNodeId) network.selectNodes([selectedNodeId]);
+  });
+
+  document.getElementById('legend-reset').addEventListener('click', clearFilter);
+}
+
+/* ===== Search ===== */
 function setupSearch() {
   const input = document.getElementById('search-input');
   const results = document.getElementById('search-results');
 
-  input.addEventListener('input', () => {
+  const doSearch = debounce(() => {
     const q = input.value.trim().toLowerCase();
-    if (q.length < 1) { results.style.display = 'none'; return; }
+    if (q.length < 1) { results.style.display = 'none'; input.setAttribute('aria-expanded', 'false'); searchHighlightIdx = -1; return; }
 
-    const matches = nodeIndex.filter(n =>
-      n.name.toLowerCase().includes(q) ||
-      n.name_en.toLowerCase().includes(q) ||
-      n.org.toLowerCase().includes(q) ||
-      n.org_lv1.toLowerCase().includes(q) ||
-      n.field.toLowerCase().includes(q)
-    ).slice(0, 20);
+    let matches;
+    if (currentView === 'keyword') {
+      matches = kwNodeIndex.filter(n => n.name.toLowerCase().includes(q)).slice(0, 20);
+    } else {
+      matches = nodeIndex.filter(n =>
+        n.name.toLowerCase().includes(q) || n.name_en.toLowerCase().includes(q) ||
+        n.org.toLowerCase().includes(q) || n.org_lv1.toLowerCase().includes(q) ||
+        n.field.toLowerCase().includes(q)
+      ).slice(0, 20);
+    }
 
+    searchHighlightIdx = -1;
     if (matches.length === 0) {
-      results.innerHTML = '<div class="search-item" style="color:#666">該当なし</div>';
+      results.innerHTML = '<div class="search-item" style="color:var(--text5)">該当なし</div>';
+    } else if (currentView === 'keyword') {
+      results.innerHTML = matches.map(m => `
+        <div class="search-item" data-id="${esc(m.id)}" data-type="keyword" role="option">
+          <span>${esc(m.name)}</span>
+          <div class="org">関連研究者 ${m.count}名</div>
+        </div>
+      `).join('');
     } else {
       results.innerHTML = matches.map(m => `
-        <div class="search-item" data-id="${m.id}">
+        <div class="search-item" data-id="${esc(m.id)}" role="option">
           <span>${esc(m.name)}</span><span class="name-en">${esc(m.name_en)}</span>
           <div class="org">${esc(m.org_lv1)} ${esc(m.org)} / ${esc(m.job)}</div>
         </div>
       `).join('');
     }
     results.style.display = 'block';
+    input.setAttribute('aria-expanded', 'true');
+  }, 200);
+
+  input.addEventListener('input', doSearch);
+
+  input.addEventListener('keydown', (e) => {
+    const items = results.querySelectorAll('.search-item[data-id]');
+    if (items.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      searchHighlightIdx = Math.min(searchHighlightIdx + 1, items.length - 1);
+      updateSearchHighlight(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      searchHighlightIdx = Math.max(searchHighlightIdx - 1, 0);
+      updateSearchHighlight(items);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const target = searchHighlightIdx >= 0 ? items[searchHighlightIdx] : items[0];
+      if (target) {
+        if (target.dataset.type === 'keyword') { showKeywordDetail(target.dataset.id); network.selectNodes([target.dataset.id]); network.focus(target.dataset.id, { scale: 1.5, animation: true }); }
+        else { showDetail(target.dataset.id); }
+        results.style.display = 'none'; input.value = ''; input.setAttribute('aria-expanded', 'false'); searchHighlightIdx = -1;
+      }
+    } else if (e.key === 'Escape') {
+      results.style.display = 'none'; input.setAttribute('aria-expanded', 'false'); searchHighlightIdx = -1;
+    }
   });
 
   results.addEventListener('click', (e) => {
     const item = e.target.closest('.search-item');
-    if (!item || !item.dataset.id) return;
-    showDetail(item.dataset.id);
-    results.style.display = 'none';
-    input.value = '';
-  });
-
-  // Close on outside click
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('#search-box')) results.style.display = 'none';
-  });
-
-  // Enter key
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      const first = results.querySelector('.search-item[data-id]');
-      if (first) { showDetail(first.dataset.id); results.style.display = 'none'; input.value = ''; }
+    if (item && item.dataset.id) {
+      if (item.dataset.type === 'keyword') { showKeywordDetail(item.dataset.id); network.selectNodes([item.dataset.id]); network.focus(item.dataset.id, { scale: 1.5, animation: true }); }
+      else { showDetail(item.dataset.id); }
+      results.style.display = 'none'; input.value = ''; input.setAttribute('aria-expanded', 'false');
     }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#search-box')) { results.style.display = 'none'; input.setAttribute('aria-expanded', 'false'); searchHighlightIdx = -1; }
+    if (!e.target.closest('#path-search-box')) document.getElementById('path-results').style.display = 'none';
   });
 }
 
+function updateSearchHighlight(items) {
+  items.forEach((it, i) => it.classList.toggle('highlighted', i === searchHighlightIdx));
+  if (searchHighlightIdx >= 0) items[searchHighlightIdx].scrollIntoView({ block: 'nearest' });
+}
+
+/* ===== Path Search (BFS) ===== */
+function setupPathSearch() {
+  const input = document.getElementById('path-input');
+  const results = document.getElementById('path-results');
+
+  const doSearch = debounce(() => {
+    const q = input.value.trim().toLowerCase();
+    if (q.length < 1) { results.style.display = 'none'; return; }
+    const matches = nodeIndex.filter(n =>
+      n.id !== selectedNodeId && (
+        n.name.toLowerCase().includes(q) || n.name_en.toLowerCase().includes(q) ||
+        n.org.toLowerCase().includes(q)
+      )
+    ).slice(0, 15);
+
+    results.innerHTML = matches.length === 0
+      ? '<div class="search-item" style="color:var(--text5)">該当なし</div>'
+      : matches.map(m => `
+          <div class="search-item" data-id="${esc(m.id)}" role="option">
+            <span>${esc(m.name)}</span><span class="name-en">${esc(m.name_en)}</span>
+            <div class="org">${esc(m.org_lv1)}</div>
+          </div>
+        `).join('');
+    results.style.display = 'block';
+  }, 200);
+
+  input.addEventListener('input', doSearch);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { results.style.display = 'none'; return; }
+    if (e.key === 'Enter') {
+      const first = results.querySelector('.search-item[data-id]');
+      if (first) { findPath(selectedNodeId, first.dataset.id); results.style.display = 'none'; input.value = ''; }
+    }
+  });
+  results.addEventListener('click', (e) => {
+    const item = e.target.closest('.search-item');
+    if (item && item.dataset.id) { findPath(selectedNodeId, item.dataset.id); results.style.display = 'none'; input.value = ''; }
+  });
+}
+
+function findPath(fromId, toId) {
+  if (!fromId || !toId) return;
+
+  // BFS with parent tracking
+  const parent = new Map();
+  parent.set(fromId, null);
+  const queue = [fromId];
+  let found = false;
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (current === toId) { found = true; break; }
+    for (const neighbor of network.getConnectedNodes(current)) {
+      if (!parent.has(neighbor)) {
+        parent.set(neighbor, current);
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  let path = null;
+  if (found) {
+    path = [];
+    for (let n = toId; n !== null; n = parent.get(n)) path.unshift(n);
+  }
+
+  const banner = document.getElementById('path-banner');
+  const content = document.getElementById('path-banner-content');
+
+  if (!path) {
+    content.innerHTML = `<span style="color:#f08080">${esc(rd(researcherData[fromId],'n'))} と ${esc(rd(researcherData[toId],'n'))} の間に経路が見つかりませんでした。</span>`;
+    banner.style.display = 'block';
+    return;
+  }
+
+  network.selectNodes(path);
+  const pathEdges = [];
+  for (let i = 0; i < path.length - 1; i++) {
+    const edges = network.getConnectedEdges(path[i]);
+    for (const eid of edges) {
+      const ed = edgesDataset.get(eid);
+      if (ed && ((ed.from === path[i] && ed.to === path[i + 1]) || (ed.from === path[i + 1] && ed.to === path[i]))) {
+        pathEdges.push(eid); break;
+      }
+    }
+  }
+  network.selectEdges(pathEdges);
+  network.fit({ nodes: path, animation: { duration: 800, easingFunction: 'easeInOutQuad' } });
+
+  const names = path.map(id => {
+    const info = researcherData[id];
+    return `<span style="color:var(--accent2);cursor:pointer" data-path-node="${id}">${esc(rd(info,'n') || id)}</span>`;
+  });
+  content.innerHTML = `<b>最短経路（${path.length - 1}ステップ）:</b> ${names.join(' → ')}`;
+  banner.style.display = 'block';
+
+  banner.querySelectorAll('[data-path-node]').forEach(el => {
+    el.addEventListener('click', () => showDetail(el.dataset.pathNode));
+  });
+}
+
+/* ===== Legend ===== */
 function buildLegend() {
   const container = document.getElementById('legend-items');
   const title = document.getElementById('legend-title');
   container.innerHTML = '';
 
   if (currentMode === 'topic') {
-    title.textContent = 'Research Topics';
+    title.textContent = 'トピック Topics';
     const topicCounts = {};
     for (const n of netData.nodes) {
       const g = n.group;
@@ -444,9 +954,14 @@ function buildLegend() {
     const sorted = Object.entries(topicCounts).sort((a, b) => b[1] - a[1]);
     for (const [tid, count] of sorted) {
       const color = COLORS[parseInt(tid) % COLORS.length];
+      const label = topicLabels[tid] || `Topic ${tid}`;
       const div = document.createElement('div');
       div.className = 'legend-item';
-      div.innerHTML = `<span class="legend-dot" style="background:${color}"></span>Topic ${tid} (${count})`;
+      div.dataset.filterKey = tid;
+      div.dataset.filterType = 'topic';
+      div.setAttribute('role', 'button');
+      div.setAttribute('tabindex', '0');
+      div.innerHTML = `<span class="legend-dot" style="background:${color}"></span><span style="flex:1">${esc(label)}</span><span class="legend-count">${count}</span>`;
       container.appendChild(div);
     }
   } else {
@@ -462,56 +977,344 @@ function buildLegend() {
       const color = orgColors[org] || '#555';
       const div = document.createElement('div');
       div.className = 'legend-item';
-      div.style.cursor = 'pointer';
-      div.innerHTML = `<span class="legend-dot" style="background:${color}"></span>${esc(org)} (${count})`;
+      div.dataset.filterKey = org;
+      div.dataset.filterType = 'dept';
+      div.setAttribute('role', 'button');
+      div.setAttribute('tabindex', '0');
+      div.innerHTML = `<span class="legend-dot" style="background:${color}"></span><span style="flex:1">${esc(org)}</span><span class="legend-count">${count}</span>`;
       container.appendChild(div);
     }
   }
 }
 
-function switchMode(mode) {
-  currentMode = mode;
-  // Update button states
-  document.querySelectorAll('#mode-switch button').forEach(btn => {
-    btn.classList.toggle('active', btn.textContent.includes(mode === 'topic' ? 'トピック' : '部局'));
-  });
+// Legend click handler — attached once, outside buildLegend()
+document.getElementById('legend-items').addEventListener('click', (e) => {
+  const item = e.target.closest('.legend-item');
+  if (!item) return;
+  applyFilter(item.dataset.filterType, item.dataset.filterKey);
+});
+// Also support Enter/Space on legend items (a11y)
+document.getElementById('legend-items').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    const item = e.target.closest('.legend-item');
+    if (!item) return;
+    e.preventDefault();
+    applyFilter(item.dataset.filterType, item.dataset.filterKey);
+  }
+});
 
-  // Update node colors
+/* ===== Filter ===== */
+function applyFilter(type, key) {
+  if (activeFilter && activeFilter.type === type && activeFilter.key === key) {
+    clearFilter(); return;
+  }
+  activeFilter = { type, key };
+  document.getElementById('legend-reset').style.display = 'block';
+  document.querySelectorAll('.legend-item').forEach(el => {
+    el.classList.toggle('dimmed', el.dataset.filterKey !== key);
+  });
   const updates = [];
   for (const n of netData.nodes) {
-    let color;
-    if (mode === 'topic') {
-      color = n.color;
-    } else {
-      color = orgColors[n.org_lv1] || '#555';
-    }
-    updates.push({
-      id: n.id,
-      color: { background: color, border: color, highlight: { background: '#fff', border: color } },
-    });
+    const match = type === 'topic' ? String(n.group) === key : (n.org_lv1 || '') === key;
+    updates.push({ id: n.id, hidden: !match });
   }
   nodesDataset.update(updates);
+}
 
-  // Update legend
+function clearFilter() {
+  activeFilter = null;
+  document.getElementById('legend-reset').style.display = 'none';
+  document.querySelectorAll('.legend-item').forEach(el => el.classList.remove('dimmed'));
+  nodesDataset.update(netData.nodes.map(n => ({ id: n.id, hidden: false })));
+}
+
+/* ===== Mode Switch ===== */
+function setupModeSwitch() {
+  document.getElementById('mode-switch').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn || !btn.dataset.mode) return;
+    switchMode(btn.dataset.mode);
+  });
+}
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('#mode-switch button').forEach(btn => {
+    const isActive = btn.dataset.mode === mode;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-checked', isActive);
+  });
+  if (activeFilter) clearFilter();
+  nodesDataset.update(netData.nodes.map(n => {
+    const color = mode === 'topic' ? n.color : (orgColors[n.org_lv1] || '#555');
+    return { id: n.id, color: { background: color, border: color, highlight: { background: '#fff', border: color } } };
+  }));
   buildLegend();
 }
 
-function toggleLegend() {
-  document.getElementById('legend').classList.toggle('visible');
+/* ===== Modals ===== */
+function setupModals() {
+  document.getElementById('about-btn').addEventListener('click', () => {
+    document.getElementById('about-modal').classList.toggle('open');
+  });
+  document.getElementById('stats-btn').addEventListener('click', () => {
+    document.getElementById('stats-modal').classList.toggle('open');
+    loadStats();
+  });
+  document.getElementById('legend-toggle').addEventListener('click', () => {
+    const legend = document.getElementById('legend');
+    legend.classList.toggle('visible');
+    const isOpen = legend.classList.contains('visible');
+    document.getElementById('legend-toggle').classList.toggle('active', isOpen);
+    document.getElementById('legend-toggle').setAttribute('aria-expanded', isOpen);
+  });
 }
 
-function toggleAbout() {
-  const modal = document.getElementById('about-modal');
-  modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+/* ===== Stats ===== */
+let statsLoaded = false;
+async function loadStats() {
+  if (statsLoaded) return;
+  const content = document.getElementById('stats-content');
+  content.innerHTML = '<p style="color:var(--text4)">読み込み中...</p>';
+  try {
+    const resp = await fetch('stats.json');
+    const stats = await resp.json();
+    statsLoaded = true;
+    let html = `
+      <div class="stats-grid">
+        <div class="stats-card"><div class="num">${stats.total_nodes.toLocaleString()}</div><div class="label">研究者（全体）</div></div>
+        <div class="stats-card"><div class="num">${stats.total_edges.toLocaleString()}</div><div class="label">つながり（全体）</div></div>
+        <div class="stats-card"><div class="num">${netData.nodes.length.toLocaleString()}</div><div class="label">表示ノード</div></div>
+        <div class="stats-card"><div class="num">${netData.edges.length.toLocaleString()}</div><div class="label">表示エッジ</div></div>
+        <div class="stats-card"><div class="num">${(stats.topics || []).length}</div><div class="label">トピック数</div></div>
+      </div>
+      <h3>トピック別研究者数</h3>`;
+    const topics = (stats.topics || []).filter(t => t.id >= 0);
+    const maxCount = topics.length > 0 ? topics[0].count : 1;
+    for (const t of topics) {
+      const color = COLORS[t.id % COLORS.length];
+      const label = topicLabels[String(t.id)] || t.label;
+      const pct = Math.round(t.count / maxCount * 100);
+      html += `<div class="stats-topic-bar">
+        <span class="legend-dot" style="background:${color};flex-shrink:0"></span>
+        <span style="flex:1;font-size:11px;color:var(--text2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(label)}">${esc(label)}</span>
+        <span style="color:var(--text4);font-size:11px;flex-shrink:0;width:35px;text-align:right">${t.count}</span>
+        <div class="bar"><div class="bar-fill" style="background:${color};width:${pct}%"></div></div>
+      </div>`;
+    }
+    content.innerHTML = html;
+  } catch (err) {
+    content.innerHTML = '<p style="color:#f08080">統計データの読み込みに失敗しました。</p>';
+  }
 }
 
-function esc(s) {
-  if (!s) return '';
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
+/* ===== PNG Export ===== */
+function setupExport() {
+  document.getElementById('export-btn').addEventListener('click', () => {
+    const canvas = document.querySelector('#network canvas');
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = 'uosaka-research-landscape.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
 }
 
+/* ===== Theme Toggle ===== */
+function setupThemeToggle() {
+  // Load saved theme
+  const saved = localStorage.getItem('theme');
+  if (saved === 'light') document.documentElement.setAttribute('data-theme', 'light');
+
+  document.getElementById('theme-btn').addEventListener('click', () => {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    if (isLight) {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      localStorage.setItem('theme', 'light');
+    }
+  });
+}
+
+/* ===== View Switch (researcher / keyword) ===== */
+function setupViewSwitch() {
+  document.getElementById('view-switch').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn || !btn.dataset.view) return;
+    switchView(btn.dataset.view);
+  });
+}
+
+async function switchView(view) {
+  if (view === currentView) return;
+  currentView = view;
+  document.querySelectorAll('#view-switch button').forEach(btn => {
+    const isActive = btn.dataset.view === view;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-checked', isActive);
+  });
+
+  // Close detail panel
+  closeDetail();
+  if (activeFilter) clearFilter();
+
+  // Toggle mode-switch visibility (only for researcher view)
+  document.getElementById('mode-switch').style.display = view === 'researcher' ? 'flex' : 'none';
+  document.getElementById('path-search-box').style.display = view === 'researcher' ? '' : 'none';
+
+  if (view === 'keyword') {
+    await loadKeywordNetwork();
+  } else {
+    showResearcherNetwork();
+  }
+}
+
+async function loadKeywordNetwork() {
+  if (!kwData) {
+    const resp = await fetch('keywords.json');
+    if (!resp.ok) { console.error('keywords.json load failed'); return; }
+    kwData = await resp.json();
+
+    kwNodesDataset = new vis.DataSet(kwData.nodes.map(n => ({
+      id: n.id, label: n.label, fullLabel: n.label,
+      size: n.size,
+      color: { background: n.color, border: n.color, highlight: { background: '#fff', border: n.color } },
+      font: { color: '#fff', size: 11, strokeWidth: 2, strokeColor: '#000' },
+      borderWidth: 1.5,
+      group: n.group,
+      x: n.x, y: n.y,
+      fixed: { x: true, y: true },
+      hidden: false,
+    })));
+
+    kwEdgesDataset = new vis.DataSet(kwData.edges.map((e, i) => ({
+      id: 'kw_' + i, from: e.from, to: e.to, width: e.width,
+      weight: e.weight,
+      color: { color: '#333', highlight: '#888', opacity: 0.4 },
+      smooth: { type: 'continuous' },
+    })));
+
+    // Build keyword search index
+    kwNodeIndex = kwData.nodes.map(n => ({
+      id: n.id, name: n.id, count: n.count,
+    }));
+  }
+
+  // Swap datasets
+  network.setData({ nodes: kwNodesDataset, edges: kwEdgesDataset });
+  network.setOptions({ physics: { enabled: false } });
+
+  // Cache degrees
+  kwNodeDegreeCache = {};
+  kwNodesDataset.forEach(n => { kwNodeDegreeCache[n.id] = network.getConnectedNodes(n.id).length; });
+
+  // Update search placeholder
+  document.getElementById('search-input').placeholder = 'キーワードを検索...';
+
+  // Rebuild legend for keywords
+  buildLegend();
+
+  // Fit view
+  network.fit({ animation: { duration: 500 } });
+}
+
+function showResearcherNetwork() {
+  network.setData({ nodes: nodesDataset, edges: edgesDataset });
+  network.setOptions({ physics: { enabled: false } });
+
+  document.getElementById('search-input').placeholder = '研究者を検索（名前・所属・分野）...';
+  buildLegend();
+  network.fit({ animation: { duration: 500 } });
+}
+
+/* ===== Keyword Detail Panel ===== */
+function showKeywordDetail(kwId) {
+  const kwNode = kwData.nodes.find(n => n.id === kwId);
+  if (!kwNode) return;
+
+  selectedNodeId = kwId;
+  const panel = document.getElementById('detail-panel');
+  const content = document.getElementById('detail-content');
+  const networkDiv = document.getElementById('network');
+
+  panel.classList.add('open');
+  networkDiv.classList.add('panel-open');
+
+  const topicColor = COLORS[kwNode.group % COLORS.length] || '#888';
+
+  // Connected keywords
+  const connectedKws = network.getConnectedNodes(kwId);
+  const connEdges = network.getConnectedEdges(kwId);
+  const kwConnections = [];
+  for (const ckw of connectedKws) {
+    let weight = 0;
+    for (const eid of connEdges) {
+      const ed = kwEdgesDataset.get(eid);
+      if (ed && ((ed.from === kwId && ed.to === ckw) || (ed.from === ckw && ed.to === kwId))) {
+        weight = ed.weight || 0; break;
+      }
+    }
+    kwConnections.push({ id: ckw, weight });
+  }
+  kwConnections.sort((a, b) => b.weight - a.weight);
+
+  let html = `
+    <div class="detail-name">${esc(kwId)}</div>
+    <div class="detail-name-en" style="color:var(--text3)">キーワード / Keyword</div>
+    <div class="detail-topic" style="background:${topicColor}33;border:1px solid ${topicColor};color:${topicColor}">${esc(topicLabels[String(kwNode.group)] || '')}</div>
+    <div style="margin-top:6px">
+      <span class="stat-badge">関連研究者 ${kwNode.count}名</span>
+      <span class="stat-badge">関連語 ${connectedKws.length}語</span>
+    </div>
+  `;
+
+  // Related keywords (as clickable tags)
+  html += `<div class="section-title">関連キーワード (${Math.min(kwConnections.length, 30)}語)</div><div style="line-height:2">`;
+  for (const ck of kwConnections.slice(0, 30)) {
+    html += `<span class="kw-tag" data-kw-id="${esc(ck.id)}">${esc(ck.id)}<span style="color:var(--text5);margin-left:4px;font-size:10px">${ck.weight}</span></span>`;
+  }
+  html += `</div>`;
+
+  // Related researchers
+  html += `<div class="section-title">関連研究者 (${kwNode.researchers.length}名)</div>`;
+  for (const rid of kwNode.researchers.slice(0, 20)) {
+    const rInfo = researcherData[rid];
+    if (!rInfo) continue;
+    html += `<div class="kw-researcher-item" data-researcher-id="${esc(rid)}">
+      <div style="font-weight:500;color:var(--text)">${esc(rd(rInfo,'n'))}</div>
+      <div style="color:var(--text4);font-size:11px">${esc(rd(rInfo,'o1'))} ${esc(rd(rInfo,'o'))} / ${esc(rd(rInfo,'j'))}</div>
+    </div>`;
+  }
+  if (kwNode.researchers.length > 20) {
+    html += `<div style="color:var(--text5);font-size:11px;text-align:center;padding:6px 0">...他 ${kwNode.researchers.length - 20}名</div>`;
+  }
+
+  content.innerHTML = html;
+
+  // Click handlers for keyword tags and researcher items
+  content.querySelectorAll('.kw-tag').forEach(el => {
+    el.addEventListener('click', () => {
+      showKeywordDetail(el.dataset.kwId);
+      network.selectNodes([el.dataset.kwId]);
+      network.focus(el.dataset.kwId, { scale: 1.5, animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+    });
+  });
+  content.querySelectorAll('.kw-researcher-item').forEach(el => {
+    el.addEventListener('click', () => {
+      // Switch to researcher view and show detail
+      switchView('researcher').then(() => {
+        setTimeout(() => showDetail(el.dataset.researcherId), 300);
+      });
+    });
+  });
+
+  network.selectNodes([kwId]);
+  network.focus(kwId, { scale: 1.5, animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+}
+
+/* ===== Start ===== */
 init();
 </script>
 </body>

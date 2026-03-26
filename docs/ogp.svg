@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <rect width="1200" height="630" fill="#0a0a0a"/>
+
+  <!-- Network nodes (decorative) -->
+  <g opacity="0.3">
+    <circle cx="150" cy="200" r="20" fill="#e6194b"/><circle cx="280" cy="150" r="15" fill="#3cb44b"/>
+    <circle cx="400" cy="250" r="25" fill="#4363d8"/><circle cx="320" cy="350" r="12" fill="#f58231"/>
+    <circle cx="500" cy="180" r="18" fill="#911eb4"/><circle cx="550" cy="320" r="22" fill="#42d4f4"/>
+    <circle cx="180" cy="380" r="14" fill="#f032e6"/><circle cx="650" cy="220" r="16" fill="#bfef45"/>
+    <circle cx="700" cy="350" r="20" fill="#469990"/><circle cx="750" cy="150" r="13" fill="#dcbeff"/>
+    <circle cx="850" cy="250" r="24" fill="#e6194b"/><circle cx="900" cy="380" r="17" fill="#3cb44b"/>
+    <circle cx="950" cy="180" r="15" fill="#4363d8"/><circle cx="1050" cy="300" r="21" fill="#f58231"/>
+    <circle cx="1000" cy="420" r="12" fill="#911eb4"/><circle cx="100" cy="450" r="16" fill="#42d4f4"/>
+    <circle cx="450" cy="420" r="14" fill="#9A6324"/><circle cx="600" cy="450" r="18" fill="#800000"/>
+    <line x1="150" y1="200" x2="280" y2="150" stroke="#333" stroke-width="1"/>
+    <line x1="280" y1="150" x2="400" y2="250" stroke="#333" stroke-width="1"/>
+    <line x1="400" y1="250" x2="500" y2="180" stroke="#333" stroke-width="1"/>
+    <line x1="400" y1="250" x2="550" y2="320" stroke="#333" stroke-width="1"/>
+    <line x1="150" y1="200" x2="180" y2="380" stroke="#333" stroke-width="1"/>
+    <line x1="500" y1="180" x2="650" y2="220" stroke="#333" stroke-width="1"/>
+    <line x1="550" y1="320" x2="700" y2="350" stroke="#333" stroke-width="1"/>
+    <line x1="650" y1="220" x2="750" y2="150" stroke="#333" stroke-width="1"/>
+    <line x1="750" y1="150" x2="850" y2="250" stroke="#333" stroke-width="1"/>
+    <line x1="850" y1="250" x2="950" y2="180" stroke="#333" stroke-width="1"/>
+    <line x1="850" y1="250" x2="900" y2="380" stroke="#333" stroke-width="1"/>
+    <line x1="950" y1="180" x2="1050" y2="300" stroke="#333" stroke-width="1"/>
+    <line x1="1050" y1="300" x2="1000" y2="420" stroke="#333" stroke-width="1"/>
+    <line x1="320" y1="350" x2="450" y2="420" stroke="#333" stroke-width="1"/>
+    <line x1="550" y1="320" x2="600" y2="450" stroke="#333" stroke-width="1"/>
+    <line x1="700" y1="350" x2="900" y2="380" stroke="#333" stroke-width="1"/>
+  </g>
+
+  <!-- Title -->
+  <text x="600" y="270" text-anchor="middle" fill="#ffffff" font-family="Helvetica Neue, Arial, sans-serif" font-size="52" font-weight="700">U-Osaka Ecological Map</text>
+  <text x="600" y="330" text-anchor="middle" fill="#888888" font-family="Helvetica Neue, Arial, sans-serif" font-size="28">大阪大学 研究者ネットワークマップ</text>
+
+  <!-- Color dots -->
+  <g transform="translate(340, 380)">
+    <circle cx="0" cy="0" r="8" fill="#e6194b"/><circle cx="40" cy="0" r="8" fill="#3cb44b"/>
+    <circle cx="80" cy="0" r="8" fill="#4363d8"/><circle cx="120" cy="0" r="8" fill="#f58231"/>
+    <circle cx="160" cy="0" r="8" fill="#911eb4"/><circle cx="200" cy="0" r="8" fill="#42d4f4"/>
+    <circle cx="240" cy="0" r="8" fill="#f032e6"/><circle cx="280" cy="0" r="8" fill="#bfef45"/>
+    <circle cx="320" cy="0" r="8" fill="#469990"/><circle cx="360" cy="0" r="8" fill="#dcbeff"/>
+    <circle cx="400" cy="0" r="8" fill="#9A6324"/><circle cx="440" cy="0" r="8" fill="#800000"/>
+    <circle cx="480" cy="0" r="8" fill="#aaffc3"/><circle cx="520" cy="0" r="8" fill="#808000"/>
+  </g>
+
+  <text x="600" y="430" text-anchor="middle" fill="#666666" font-family="Helvetica Neue, Arial, sans-serif" font-size="18">共著・研究トピックでつながる研究者の探索マップ</text>
+</svg>

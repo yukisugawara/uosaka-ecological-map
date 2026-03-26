@@ -1,0 +1,16 @@
+{
+  "name": "U-Osaka Ecological Map",
+  "short_name": "U-Osaka Map",
+  "description": "大阪大学 研究者ネットワーク可視化マップ",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#4363d8",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

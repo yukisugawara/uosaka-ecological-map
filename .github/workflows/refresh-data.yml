@@ -1,0 +1,67 @@
+name: Refresh Research Data
+
+on:
+  schedule:
+    # 毎月1日 AM3:00 (JST) = 前月末 18:00 UTC
+    - cron: '0 18 28 * *'
+  workflow_dispatch:  # 手動実行も可能
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120  # データ収集に時間がかかる場合がある
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install requests networkx scikit-learn pandas numpy
+          # Optional: better layout
+          pip install fa2 || echo "fa2 not available, using spring_layout fallback"
+          # Optional: better topic modeling
+          pip install bertopic sentence-transformers || echo "BERTopic not available, using TF-IDF fallback"
+
+      - name: Step 1 - Collect data
+        run: python 01_collect_data.py
+        env:
+          PYTHONUNBUFFERED: "1"
+
+      - name: Step 2 - Build network
+        run: python 02_build_network.py
+        env:
+          PYTHONUNBUFFERED: "1"
+
+      - name: Step 3 - Generate visualization data
+        run: python 03_visualize.py
+        env:
+          PYTHONUNBUFFERED: "1"
+
+      - name: Run tests
+        run: |
+          pip install pytest
+          python -m pytest tests/ -v
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git diff --quiet docs/ && echo "changed=false" >> $GITHUB_OUTPUT || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/network.json docs/researchers.json docs/stats.json
+          git add data/osaka_researchers_list.json data/topics.json data/osaka_researcher_network.gexf
+          # Don't commit researcher_details.json (2GB)
+          git commit -m "chore: refresh research data ($(date +%Y-%m-%d))"
+          git push

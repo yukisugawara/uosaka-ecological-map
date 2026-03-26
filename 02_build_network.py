@@ -87,24 +87,90 @@ def build_researcher_corpus(details):
     return researcher_ids, corpus
 
 
-def build_coauthor_network(details):
-    """共著・共同研究者ネットワークを構築"""
-    G = nx.Graph()
+def _normalize_name(name):
+    """名前を正規化（マッチング精度向上）"""
+    import unicodedata
+    s = name.replace("　", " ").replace(",", " ").replace(".", " ")
+    s = unicodedata.normalize("NFKC", s)
+    return " ".join(s.split()).strip()
 
-    # パーマリンク→研究者名の辞書
-    permalink_to_name = {}
+
+def _build_name_index(details):
+    """多様な名前変形からpermalinkへの逆引き辞書を構築"""
+    name_to_pl = {}
+    pl_to_names = {}
+
     for d in details:
         pl = d.get("permalink", "")
+        if not pl:
+            continue
         osaka = d.get("osaka_info", {})
-        name = osaka.get("name_ja", osaka.get("name", pl))
-        if pl:
-            permalink_to_name[pl] = name
+        name_ja = osaka.get("name_ja", osaka.get("name", ""))
+        name_en = osaka.get("name_en", "")
 
-    # 名前→パーマリンクの逆引き（阪大研究者のみ）
-    name_to_permalink = {}
-    for pl, name in permalink_to_name.items():
-        clean = name.replace("　", "").replace(" ", "")
-        name_to_permalink[clean] = pl
+        variants = set()
+        for raw in [name_ja, name_en]:
+            if not raw:
+                continue
+            norm = _normalize_name(raw)
+            # フルネーム（スペースなし）
+            variants.add(norm.replace(" ", ""))
+            # フルネーム（スペースあり）
+            variants.add(norm)
+            # 姓名逆転
+            parts = norm.split()
+            if len(parts) == 2:
+                variants.add(f"{parts[1]}{parts[0]}")
+                variants.add(f"{parts[1]} {parts[0]}")
+
+        # researchmapのプロフィールから取得した名前
+        profile = d.get("profile", {})
+        for key in ["family_name", "given_name"]:
+            fn = profile.get(key, {})
+            if isinstance(fn, dict):
+                for lang_val in fn.values():
+                    if isinstance(lang_val, str) and lang_val:
+                        variants.add(lang_val.strip())
+        # 姓+名の組み合わせ
+        fam = profile.get("family_name", {})
+        giv = profile.get("given_name", {})
+        if isinstance(fam, dict) and isinstance(giv, dict):
+            for lang in ["ja", "en"]:
+                f = fam.get(lang, "")
+                g = giv.get(lang, "")
+                if f and g:
+                    variants.add(f"{f}{g}")
+                    variants.add(f"{f} {g}")
+                    variants.add(f"{g}{f}")
+                    variants.add(f"{g} {f}")
+                    # 姓のみ（同姓がいなければ後で使う）
+                    variants.add(f"_surname_{f}")
+
+        pl_to_names[pl] = variants
+        for v in variants:
+            if v and not v.startswith("_surname_"):
+                if v not in name_to_pl:
+                    name_to_pl[v] = pl
+                # 衝突時は登録しない（曖昧さ回避）
+
+    # 姓のみマッチング（ユニークな姓のみ）
+    surname_counts = defaultdict(list)
+    for pl, names in pl_to_names.items():
+        for n in names:
+            if n.startswith("_surname_"):
+                surname_counts[n[9:]].append(pl)
+    for surname, pls in surname_counts.items():
+        if len(pls) == 1 and surname not in name_to_pl:
+            name_to_pl[surname] = pls[0]
+
+    return name_to_pl
+
+
+def build_coauthor_network(details):
+    """共著・共同研究者ネットワークを構築（改善版）"""
+    G = nx.Graph()
+
+    name_to_pl = _build_name_index(details)
 
     # ノード追加
     for d in details:
@@ -120,6 +186,23 @@ def build_coauthor_network(details):
                     job=osaka.get("job_name", ""),
                     research_field=osaka.get("research_field", ""))
 
+    def _match_name(raw_name):
+        """名前文字列からpermalinkを検索"""
+        norm = _normalize_name(raw_name)
+        nospace = norm.replace(" ", "")
+        # 完全一致
+        if nospace in name_to_pl:
+            return name_to_pl[nospace]
+        if norm in name_to_pl:
+            return name_to_pl[norm]
+        # 姓名逆転
+        parts = norm.split()
+        if len(parts) == 2:
+            rev = f"{parts[1]}{parts[0]}"
+            if rev in name_to_pl:
+                return name_to_pl[rev]
+        return None
+
     # 共著関係からエッジ構築
     for d in details:
         pl = d.get("permalink", "")
@@ -131,26 +214,30 @@ def build_coauthor_network(details):
         # 論文の共著者
         for paper in d.get("published_papers", []):
             authors_data = paper.get("authors", {})
-            author_names = []
             for lang in ["ja", "en"]:
                 for a in authors_data.get(lang, []):
-                    if isinstance(a, dict):
-                        author_names.append(a.get("name", ""))
-            for aname in author_names:
-                clean = aname.replace("　", "").replace(" ", "").replace(",", "").strip()
-                if clean in name_to_permalink and name_to_permalink[clean] != pl:
-                    coauthors[name_to_permalink[clean]] += 1
+                    if not isinstance(a, dict):
+                        continue
+                    aname = a.get("name", "")
+                    if not aname:
+                        continue
+                    matched_pl = _match_name(aname)
+                    if matched_pl and matched_pl != pl:
+                        coauthors[matched_pl] += 1
 
         # 研究プロジェクトの共同研究者
         for proj in d.get("research_projects", []):
             investigators = proj.get("investigators", {})
             for lang in ["ja", "en"]:
                 for inv in investigators.get(lang, []):
-                    if isinstance(inv, dict):
-                        iname = inv.get("name", "")
-                        clean = iname.replace("　", "").replace(" ", "").replace(",", "").strip()
-                        if clean in name_to_permalink and name_to_permalink[clean] != pl:
-                            coauthors[name_to_permalink[clean]] += 1
+                    if not isinstance(inv, dict):
+                        continue
+                    iname = inv.get("name", "")
+                    if not iname:
+                        continue
+                    matched_pl = _match_name(iname)
+                    if matched_pl and matched_pl != pl:
+                        coauthors[matched_pl] += 1
 
         # エッジ追加（重み = 共同出現回数）
         for coauthor_pl, weight in coauthors.items():
@@ -287,6 +374,15 @@ def main():
 
     # トピック類似度エッジ追加
     G = add_topic_similarity_edges(G, researcher_ids, corpus, threshold=0.15)
+
+    # 中心性指標の計算
+    print("中心性指標を計算中...")
+    pagerank = nx.pagerank(G, weight="weight")
+    betweenness = nx.betweenness_centrality(G, weight="weight", k=min(500, G.number_of_nodes()))
+    for node in G.nodes():
+        G.nodes[node]["pagerank"] = pagerank.get(node, 0)
+        G.nodes[node]["betweenness"] = betweenness.get(node, 0)
+    print(f"  PageRank, 媒介中心性を計算完了")
 
     # リスト型属性を文字列に変換（GEXF互換性のため）
     for n in G.nodes():
