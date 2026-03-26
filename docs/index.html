@@ -184,6 +184,18 @@ body { font-family: 'Helvetica Neue', Arial, 'Hiragino Sans', sans-serif; backgr
   #path-search-box { flex: 1 1 100%; }
 }
 
+/* ===== Explore Results ===== */
+.explore-card { background: var(--bg4); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.2s; }
+.explore-card:hover { border-color: var(--accent); }
+.explore-card .name { font-size: 15px; font-weight: 600; }
+.explore-card .name-en { font-size: 12px; color: var(--text4); margin-left: 6px; }
+.explore-card .meta { font-size: 12px; color: var(--text3); margin-top: 4px; }
+.explore-card .field { font-size: 11px; color: var(--field); margin-top: 4px; line-height: 1.5; }
+.explore-card .topic-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-top: 4px; }
+.explore-card .stats { font-size: 11px; color: var(--text4); margin-top: 4px; }
+.explore-empty { text-align: center; color: var(--text4); padding: 30px; font-size: 14px; }
+.explore-section { font-size: 13px; font-weight: 600; color: var(--text3); margin: 12px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+
 /* ===== Skip Link (a11y) ===== */
 .skip-link { position: absolute; top: -40px; left: 0; background: var(--accent); color: #fff; padding: 8px 16px; z-index: 1000; font-size: 14px; text-decoration: none; }
 .skip-link:focus { top: 0; }
@@ -220,6 +232,8 @@ body { font-family: 'Helvetica Neue', Arial, 'Hiragino Sans', sans-serif; backgr
     <button class="active" data-mode="topic" role="radio" aria-checked="true">トピック</button>
     <button data-mode="dept" role="radio" aria-checked="false">部局</button>
   </div>
+  <button class="header-btn" id="discover-btn" aria-label="研究者を発見" style="background:#f58231;color:#fff;border-color:#f58231">発見</button>
+  <button class="header-btn" id="explore-btn" aria-label="トピックから探す">探索</button>
   <button class="header-btn" id="legend-toggle" aria-expanded="false" aria-controls="legend">凡例</button>
   <button class="header-btn" id="stats-btn" aria-label="統計を表示">統計</button>
   <button class="header-btn" id="export-btn" aria-label="画像として保存">保存</button>
@@ -282,6 +296,15 @@ body { font-family: 'Helvetica Neue', Arial, 'Hiragino Sans', sans-serif; backgr
       <h3>色分け</h3>
       <p>キーワードの色は、そのキーワードに関連する研究者の中で最も多いトピック（BERTopicによる分類）に基づいて決定されます。同じ色のキーワードは類似した研究分野に属する傾向があります。</p>
 
+      <h3 style="margin-top:18px;padding:6px 10px;background:#f5823133;border:1px solid #f5823155;border-radius:6px;color:#f58231">学生向け機能：研究者を発見する</h3>
+      <p>まだ知らない研究者を見つけるための機能があります。</p>
+      <ul>
+        <li><b>「発見」ボタン</b> -- ランダムに研究者を1人表示します。思いがけない出会いがあるかもしれません</li>
+        <li><b>「探索」ボタン</b> -- 興味のあるキーワード（例：「量子」「免疫」「AI」）を入力すると、関連する研究者の一覧が表示されます。トピック別に研究者を一覧することもできます</li>
+        <li><b>「似た研究をしている研究者」</b> -- 研究者の詳細パネルの下部に、直接つながっていないが研究分野が似ている研究者が表示されます。指導教員候補の発見に役立ちます</li>
+        <li><b>キーワードネットワーク</b> -- 「キーワード」モードに切り替えると、研究概念のつながりを視覚的に探索できます。気になるキーワードをクリックすると、そのキーワードに関連する研究者が表示されます</li>
+      </ul>
+
       <h3 style="margin-top:18px;padding:6px 10px;background:var(--bg4);border-radius:6px;">操作方法</h3>
       <ul>
         <li>「研究者 / キーワード」ボタンでネットワークを切り替え</li>
@@ -308,6 +331,22 @@ body { font-family: 'Helvetica Neue', Arial, 'Hiragino Sans', sans-serif; backgr
     <button class="modal-close" data-modal="stats-modal" aria-label="閉じる">&times;</button>
     <h2 id="stats-title">ネットワーク統計</h2>
     <div id="stats-content"></div>
+  </div>
+</div>
+
+<!-- Explore Modal -->
+<div class="modal-overlay" id="explore-modal" role="dialog" aria-modal="true" aria-labelledby="explore-title">
+  <div class="modal-box" style="max-width:750px">
+    <button class="modal-close" data-modal="explore-modal" aria-label="閉じる">&times;</button>
+    <h2 id="explore-title">研究者を探索する</h2>
+    <p style="font-size:13px;color:var(--text3);margin-bottom:12px">興味のあるキーワードを入力するか、トピックを選んで研究者を探してみましょう。</p>
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <input type="text" id="explore-keyword-input" placeholder="興味のあるキーワード（例：機械学習、量子、免疫）..." style="flex:1;min-width:200px;padding:8px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--bg);color:var(--text);font-size:14px;outline:none" autocomplete="off">
+      <select id="explore-topic-select" style="padding:8px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--bg);color:var(--text);font-size:13px;outline:none;max-width:250px">
+        <option value="">トピックを選択...</option>
+      </select>
+    </div>
+    <div id="explore-results" style="max-height:55vh;overflow-y:auto"></div>
   </div>
 </div>
 
@@ -563,6 +602,8 @@ async function init() {
   setupModals();
   setupModeSwitch();
   setupViewSwitch();
+  setupDiscover();
+  setupExplore();
   setupEventDelegation();
   setupExport();
   setupThemeToggle();
@@ -738,6 +779,20 @@ function showDetail(nodeId) {
     }
     if (connections.length > 20) {
       html += `<div style="color:var(--text5);font-size:11px;text-align:center;padding:6px 0">...他 ${connections.length - 20}名</div>`;
+    }
+  }
+
+  // Similar researchers (not directly connected)
+  const similar = findSimilarResearchers(nodeId, 8);
+  if (similar.length > 0) {
+    html += `<div class="section-title">似た研究をしている研究者</div>`;
+    html += `<div style="font-size:11px;color:var(--text5);margin-bottom:6px">（直接つながっていない研究者から推薦）</div>`;
+    for (const s of similar) {
+      html += `<div class="conn-item" data-researcher-id="${esc(s.id)}">
+        <div class="paper-title" style="font-size:12px">${esc(s.name)}</div>
+        <div style="color:var(--text5);font-size:10px">${esc(s.org)} / ${esc(s.job)}</div>
+        <div style="color:var(--text5);font-size:10px">${esc(s.topic)}</div>
+      </div>`;
     }
   }
 
@@ -1169,6 +1224,218 @@ function setupThemeToggle() {
       localStorage.setItem('theme', 'light');
     }
   });
+}
+
+/* ===== Discover (Random Researcher) ===== */
+function setupDiscover() {
+  document.getElementById('discover-btn').addEventListener('click', discoverRandom);
+}
+
+function discoverRandom() {
+  // Ensure we're in researcher view
+  if (currentView !== 'researcher') {
+    switchView('researcher').then(() => setTimeout(discoverRandom, 300));
+    return;
+  }
+  const ids = netData.nodes.map(n => n.id);
+  const randomId = ids[Math.floor(Math.random() * ids.length)];
+  showDetail(randomId);
+  network.selectNodes([randomId]);
+}
+
+/* ===== Explore (Topic/Keyword Browser) ===== */
+function setupExplore() {
+  document.getElementById('explore-btn').addEventListener('click', () => {
+    document.getElementById('explore-modal').classList.toggle('open');
+    populateExploreTopics();
+  });
+
+  // Keyword search
+  const kwInput = document.getElementById('explore-keyword-input');
+  kwInput.addEventListener('input', debounce(() => {
+    const q = kwInput.value.trim().toLowerCase();
+    if (q.length < 2) {
+      document.getElementById('explore-results').innerHTML = '<div class="explore-empty">キーワードを入力してください（2文字以上）</div>';
+      return;
+    }
+    searchResearchersByKeyword(q);
+  }, 300));
+
+  // Topic select
+  document.getElementById('explore-topic-select').addEventListener('change', (e) => {
+    const topicId = e.target.value;
+    if (topicId === '') {
+      document.getElementById('explore-results').innerHTML = '';
+      return;
+    }
+    browseByTopic(parseInt(topicId));
+    document.getElementById('explore-keyword-input').value = '';
+  });
+}
+
+function populateExploreTopics() {
+  const select = document.getElementById('explore-topic-select');
+  if (select.options.length > 1) return; // already populated
+
+  const topicCounts = {};
+  for (const n of netData.nodes) {
+    if (n.group >= 0) topicCounts[n.group] = (topicCounts[n.group] || 0) + 1;
+  }
+  const sorted = Object.entries(topicCounts).sort((a, b) => b[1] - a[1]);
+  for (const [tid, count] of sorted) {
+    const label = topicLabels[tid] || `Topic ${tid}`;
+    const opt = document.createElement('option');
+    opt.value = tid;
+    opt.textContent = `${label} (${count}名)`;
+    select.appendChild(opt);
+  }
+}
+
+function searchResearchersByKeyword(query) {
+  const results = document.getElementById('explore-results');
+  document.getElementById('explore-topic-select').value = '';
+
+  // Search in researcher fields, paper titles, grant titles, topic labels
+  const matches = [];
+  for (const n of netData.nodes) {
+    const info = researcherData[n.id];
+    if (!info) continue;
+
+    let score = 0;
+    const field = (rd(info, 'f') || '').toLowerCase();
+    const topic = (rd(info, 't') || '').toLowerCase();
+    const name = (rd(info, 'n') || '').toLowerCase();
+
+    // Match in research field (highest priority)
+    if (field.includes(query)) score += 10;
+    // Match in topic
+    if (topic.includes(query)) score += 5;
+    // Match in paper titles
+    for (const p of (info.pp || [])) {
+      if ((p.t || '').toLowerCase().includes(query)) { score += 3; break; }
+    }
+    // Match in grant titles
+    for (const g of (info.gg || [])) {
+      if ((g.t || '').toLowerCase().includes(query)) { score += 2; break; }
+    }
+
+    if (score > 0) {
+      const degree = nodeDegreeCache[n.id] || 0;
+      matches.push({ id: n.id, info, score, degree, group: n.group });
+    }
+  }
+
+  // Sort by relevance score, then by degree (connections)
+  matches.sort((a, b) => b.score - a.score || b.degree - a.degree);
+
+  if (matches.length === 0) {
+    results.innerHTML = `<div class="explore-empty">「${esc(query)}」に関連する研究者は見つかりませんでした</div>`;
+    return;
+  }
+
+  let html = `<div class="explore-section">「${esc(query)}」に関連する研究者（${matches.length}名）</div>`;
+  for (const m of matches.slice(0, 30)) {
+    const topicColor = m.group >= 0 ? COLORS[m.group % COLORS.length] : '#888';
+    html += renderExploreCard(m.id, m.info, topicColor);
+  }
+  if (matches.length > 30) {
+    html += `<div style="text-align:center;color:var(--text4);font-size:12px;padding:8px">...他 ${matches.length - 30}名</div>`;
+  }
+  results.innerHTML = html;
+  attachExploreCardListeners(results);
+}
+
+function browseByTopic(topicId) {
+  const results = document.getElementById('explore-results');
+  const topicLabel = topicLabels[String(topicId)] || `Topic ${topicId}`;
+  const topicColor = COLORS[topicId % COLORS.length];
+
+  const members = [];
+  for (const n of netData.nodes) {
+    if (n.group !== topicId) continue;
+    const info = researcherData[n.id];
+    if (!info) continue;
+    const degree = nodeDegreeCache[n.id] || 0;
+    members.push({ id: n.id, info, degree, group: topicId });
+  }
+  members.sort((a, b) => b.degree - a.degree);
+
+  let html = `<div class="explore-section" style="color:${topicColor}">${esc(topicLabel)}（${members.length}名）</div>`;
+  for (const m of members.slice(0, 40)) {
+    html += renderExploreCard(m.id, m.info, topicColor);
+  }
+  if (members.length > 40) {
+    html += `<div style="text-align:center;color:var(--text4);font-size:12px;padding:8px">...他 ${members.length - 40}名</div>`;
+  }
+  results.innerHTML = html;
+  attachExploreCardListeners(results);
+}
+
+function renderExploreCard(id, info, topicColor) {
+  return `<div class="explore-card" data-rid="${esc(id)}">
+    <div><span class="name">${esc(rd(info,'n'))}</span><span class="name-en">${esc(rd(info,'ne'))}</span></div>
+    <div class="meta">${esc(rd(info,'o1'))} ${esc(rd(info,'o'))} / ${esc(rd(info,'j'))}</div>
+    <div class="field">${esc(rd(info,'f'))}</div>
+    <span class="topic-badge" style="background:${topicColor}22;color:${topicColor};border:1px solid ${topicColor}44">${esc(rd(info,'t'))}</span>
+    <div class="stats">論文 ${info.np || 0}件 / 助成金 ${info.ng || 0}件</div>
+  </div>`;
+}
+
+function attachExploreCardListeners(container) {
+  container.querySelectorAll('.explore-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.getElementById('explore-modal').classList.remove('open');
+      if (currentView !== 'researcher') {
+        switchView('researcher').then(() => {
+          setTimeout(() => showDetail(card.dataset.rid), 300);
+        });
+      } else {
+        showDetail(card.dataset.rid);
+        network.selectNodes([card.dataset.rid]);
+      }
+    });
+  });
+}
+
+/* ===== Similar Researchers ===== */
+function findSimilarResearchers(nodeId, limit) {
+  const info = researcherData[nodeId];
+  if (!info) return [];
+  const node = netData.nodes.find(n => n.id === nodeId);
+  if (!node) return [];
+
+  const myTopic = node.group;
+  const myField = (rd(info, 'f') || '').toLowerCase();
+  const myFieldWords = new Set(myField.split(/[,、\s]+/).filter(w => w.length >= 2));
+
+  const candidates = [];
+  for (const n of netData.nodes) {
+    if (n.id === nodeId) continue;
+    const nInfo = researcherData[n.id];
+    if (!nInfo) continue;
+
+    let score = 0;
+    // Same topic
+    if (n.group === myTopic && myTopic >= 0) score += 3;
+    // Field overlap
+    const nField = (rd(nInfo, 'f') || '').toLowerCase();
+    const nFieldWords = new Set(nField.split(/[,、\s]+/).filter(w => w.length >= 2));
+    let overlap = 0;
+    for (const w of myFieldWords) { if (nFieldWords.has(w)) overlap++; }
+    score += overlap * 2;
+    // Same department
+    if (rd(info, 'o1') === rd(nInfo, 'o1') && rd(info, 'o1')) score += 1;
+
+    if (score > 0) {
+      candidates.push({ id: n.id, name: rd(nInfo, 'n'), org: rd(nInfo, 'o1'), job: rd(nInfo, 'j'), score, topic: rd(nInfo, 't') });
+    }
+  }
+
+  candidates.sort((a, b) => b.score - a.score);
+
+  // Exclude already-connected researchers
+  const connected = new Set(network.getConnectedNodes(nodeId));
+  return candidates.filter(c => !connected.has(c.id)).slice(0, limit);
 }
 
 /* ===== View Switch (researcher / keyword) ===== */
