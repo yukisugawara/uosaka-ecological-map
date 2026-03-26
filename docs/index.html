@@ -743,7 +743,6 @@ function showDetail(nodeId) {
 
   content.innerHTML = html;
   network.selectNodes([nodeId]);
-  network.focus(nodeId, { scale: 1.5, animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
 }
 
 function closeDetail() {
@@ -841,7 +840,7 @@ function setupSearch() {
       e.preventDefault();
       const target = searchHighlightIdx >= 0 ? items[searchHighlightIdx] : items[0];
       if (target) {
-        if (target.dataset.type === 'keyword') { showKeywordDetail(target.dataset.id); network.selectNodes([target.dataset.id]); network.focus(target.dataset.id, { scale: 1.5, animation: true }); }
+        if (target.dataset.type === 'keyword') { showKeywordDetail(target.dataset.id); network.selectNodes([target.dataset.id]); }
         else { showDetail(target.dataset.id); }
         results.style.display = 'none'; input.value = ''; input.setAttribute('aria-expanded', 'false'); searchHighlightIdx = -1;
       }
@@ -853,7 +852,7 @@ function setupSearch() {
   results.addEventListener('click', (e) => {
     const item = e.target.closest('.search-item');
     if (item && item.dataset.id) {
-      if (item.dataset.type === 'keyword') { showKeywordDetail(item.dataset.id); network.selectNodes([item.dataset.id]); network.focus(item.dataset.id, { scale: 1.5, animation: true }); }
+      if (item.dataset.type === 'keyword') { showKeywordDetail(item.dataset.id); network.selectNodes([item.dataset.id]); }
       else { showDetail(item.dataset.id); }
       results.style.display = 'none'; input.value = ''; input.setAttribute('aria-expanded', 'false');
     }
@@ -1332,7 +1331,7 @@ function showKeywordDetail(kwId) {
     el.addEventListener('click', () => {
       showKeywordDetail(el.dataset.kwId);
       network.selectNodes([el.dataset.kwId]);
-      network.focus(el.dataset.kwId, { scale: 1.5, animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+      network.selectNodes([el.dataset.kwId]);
     });
   });
   content.querySelectorAll('.kw-researcher-item').forEach(el => {
@@ -1345,7 +1344,6 @@ function showKeywordDetail(kwId) {
   });
 
   network.selectNodes([kwId]);
-  network.focus(kwId, { scale: 1.5, animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
 }
 
 /* ===== Start ===== */
