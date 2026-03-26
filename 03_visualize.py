@@ -449,7 +449,7 @@ def generate_keywords_json(researchers_path, network_json_path):
             all_docs.append(" ".join(tokens))
             all_rids.append(rid)
 
-    vectorizer = TfidfVectorizer(max_features=2000, max_df=0.2, min_df=3, token_pattern=r'[^\s]+')
+    vectorizer = TfidfVectorizer(max_features=5000, max_df=0.25, min_df=2, token_pattern=r'[^\s]+')
     vectorizer.fit_transform(all_docs)
     top_kw_set = set(vectorizer.get_feature_names_out())
 
@@ -457,7 +457,7 @@ def generate_keywords_json(researchers_path, network_json_path):
         for t in set(tokens):
             if t in top_kw_set:
                 keyword_researchers[t].add(rid)
-    keyword_researchers = {k: v for k, v in keyword_researchers.items() if len(v) >= 3}
+    keyword_researchers = {k: v for k, v in keyword_researchers.items() if len(v) >= 2}
     active_keywords = set(keyword_researchers.keys())
 
     cooccurrence = Counter()
@@ -467,9 +467,9 @@ def generate_keywords_json(researchers_path, network_json_path):
             for j in range(i + 1, len(kws)):
                 cooccurrence[(kws[i], kws[j])] += 1
 
-    edges_raw = [(k1, k2, c) for (k1, k2), c in cooccurrence.items() if c >= 3]
+    edges_raw = [(k1, k2, c) for (k1, k2), c in cooccurrence.items() if c >= 2]
     edges_raw.sort(key=lambda x: -x[2])
-    edges_raw = edges_raw[:4000]
+    edges_raw = edges_raw[:8000]
 
     edge_keywords = set()
     for k1, k2, _ in edges_raw:
